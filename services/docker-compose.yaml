@@ -1,0 +1,79 @@
+services:
+    emails:
+        build: ./emails
+        command: bash -c "uv run python3 manage.py runserver 0.0.0.0:8001"
+        volumes:
+            - ./emails:/app
+        ports:
+            - 8001:8001
+        restart: always
+        depends_on:
+            - emails_db
+
+    products:
+        build: ./products
+        command: bash -c "uv run python3 manage.py runserver 0.0.0.0:8002"
+        volumes:
+            - ./products:/app
+        ports:
+            - 8002:8002
+        restart: always
+        depends_on:
+            - products_db
+
+    orders:
+        build: ./orders
+        command: bash -c "uv run python3 manage.py runserver 0.0.0.0:8003"
+        volumes:
+            - ./orders:/app
+        ports:
+            - 8003:8003
+        restart: always
+        depends_on:
+            - orders_db
+
+
+    emails_db:
+        image: postgres:14.2-alpine
+        restart: unless-stopped
+        volumes:
+        - .postgres_data/products_data:/var/lib/postgres
+        environment:
+        - POSTGRES_USER=admin
+        - POSTGRES_PASSWORD=root
+        - POSTGRES_DB=admin
+        ports:
+        - "5432:5432"
+
+    orders_db:
+        image: postgres:14.2-alpine
+        restart: unless-stopped
+        volumes:
+        - .postgres_data/products_data:/var/lib/postgres
+        environment:
+        - POSTGRES_USER=admin
+        - POSTGRES_PASSWORD=root
+        - POSTGRES_DB=admin
+        ports:
+        - "5433:5432"
+
+    
+    products_db:
+        image: postgres:14.2-alpine
+        restart: unless-stopped
+        volumes:
+        - .postgres_data/products_data:/var/lib/postgres
+        environment:
+        - POSTGRES_USER=admin
+        - POSTGRES_PASSWORD=root
+        - POSTGRES_DB=admin
+        ports:
+        - "5434:5432"
+
+
+    rabbitmq:
+        image: "rabbitmq:management"
+        ports:
+            - "15672:15672" # RabbitMQ management UI
+            - "5672:5672" # RabbitMQ default port
+
