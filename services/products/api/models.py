@@ -1,5 +1,5 @@
 from django.db import models
-from django.db.models import F
+from django.db.models import F, When, Case
 
 
 class Product(models.Model):
@@ -17,9 +17,21 @@ class Product(models.Model):
         db_table = "api_products"
 
     def reserve(self, qty: int) -> bool:
-
+        """
+        if quantity avaliable is large than reserved, reserve the qty unless it exceeds quantity avaliable
+        """
         updated = Product.objects.filter(pk=self.pk, quantity_available__gte=F("quantity_reserved") + qty).update(
             quantity_reserved=F("quantity_reserved") + qty
+        )
+
+        return updated == 1
+
+    def unreserve(self, qty: int) -> bool:
+        """
+        unreserve quantity from reserved
+        """
+        updated = Product.objects.filter(pk=self.pk, quantity_reserved__gte=qty).update(
+            quantity_reserved=F("quantity_reserved") - qty
         )
 
         return updated == 1
