@@ -5,6 +5,7 @@ import uuid
 class Order(models.Model):
     OPEN = "open"
     CLOSE = "close"
+    CANCELLED = "cancelled"
 
     STATUS_CHOICES = [
         (OPEN, "Open"),

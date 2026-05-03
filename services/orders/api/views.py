@@ -12,7 +12,7 @@ from rest_framework.exceptions import AuthenticationFailed
 
 from .models import Order, OrderItem
 from .serializers import OrderSerializer, OrderItemSerializer
-from microservices.producer import publish_release_stock
+from microservices.producer import publish_message
 
 
 def get_jwt_token(request):
@@ -70,7 +70,6 @@ class OrderViewSet(viewsets.ViewSet):
     def create(self, request):
         user = request.user
         token = get_jwt_token(request)
-        user.id = 1
 
         order_data = request.data
         if not order_data:
@@ -97,10 +96,13 @@ class OrderViewSet(viewsets.ViewSet):
                 num_created = OrderItem.objects.bulk_create(order_item_bulk_create)
                 if len(num_created) != len(order_item_bulk_create):
                     raise Exception("number of order items created not matching value returned by bulk_create")
-        except Exception as e:
+        except Exception:
             # if order fails release product reservation via messages
-            publish_release_stock(order_items_data)
+            publish_message(order_items_data, "release-product")
             return Response("Failed to create order", status=status.HTTP_400_BAD_REQUEST)
 
         # send email if order created
+        email_payload = {"user_id": user.id, "token": token, "order_items": order_items_data}
+        publish_message(email_payload, "send-order-email")
+
         return Response("Order created", status=status.HTTP_201_CREATED)

@@ -120,15 +120,15 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # TODO: add envar to turn off auth
 REST_FRAMEWORK = {
-    # "DEFAULT_AUTHENTICATION_CLASSES": [
-    #     "api.authentication.RemoteJWTAuthentication",
-    # ],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "api.authentication.RemoteJWTAuthentication",
+    ],
     # "DEFAULT_PERMISSION_CLASSES": [
     #     "rest_framework.permissions.IsAuthenticated",
     # ],
-    "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.AllowAny",  # testing without auth
-    ],
+    # "DEFAULT_PERMISSION_CLASSES": [
+    #     "rest_framework.permissions.AllowAny",  # testing without auth
+    # ],
 }
 
 # Internationalization

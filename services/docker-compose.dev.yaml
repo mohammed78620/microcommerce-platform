@@ -11,6 +11,17 @@ services:
         restart: always
         depends_on:
             - emails-db
+            - products-db
+        networks:
+            - microservices-network
+    
+    emails-consumer:
+        build: ./emails
+        command: uv run python3 manage.py start_consumer
+        depends_on:
+            - rabbitmq
+            - products-db
+        restart: always
         networks:
             - microservices-network
 
@@ -61,7 +72,10 @@ services:
 
     auth-service:
         build: ./auth_service
-        command: bash -c "uv run python3 manage.py runserver 0.0.0.0:8004"
+        command: >
+            sh -c "uv run python3 manage.py wait_for_db &&
+             uv run python3 manage.py seed_users &&
+             uv run python3 manage.py runserver 0.0.0.0:8004"
         volumes:
             - ./auth_service:/app
             - /app/.venv
