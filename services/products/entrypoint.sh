@@ -3,6 +3,7 @@ set -e
 
 
 echo "Apply database migrations"
+uv run manage.py makemigrations --noinput
 uv run manage.py migrate --noinput
 
 

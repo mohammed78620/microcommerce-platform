@@ -12,20 +12,32 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 
 from pathlib import Path
 
+import environ
+
+environment = environ.FileAwareEnv(
+    DEBUG=(bool, True),
+    EMAIL_HOST_PASSWORD=(str, None),
+    EMAIL_HOST_USER=(str, None),
+    DEFAULT_FROM_EMAIL=(str, None),
+    PRODUCTS_SERVICE_URL=(str, "http://products:8002/"),
+    AUTH_SERVICE_URL=(str, "http://auth-service:8004/"),
+)
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+environ.Env.read_env(BASE_DIR / ".env")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-hu)e0fwphrg3c&ib#ya$4yu89+l&5xa^977_&u7k&-pvsfevkl"
+SECRET_KEY = "f!&nc$=8(u)m+x@h7m4*b*#swbf((jh@1+)!t+ut-97n0ytv3y"
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = environment("DEBUG")
 
-# ALLOWED_HOSTS = []
+
+ALLOWED_HOSTS = []
 
 
 # Application definition
@@ -137,3 +149,15 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 CORS_ORIGIN_ALLOW_ALL = True
+
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = environment("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = environment("EMAIL_HOST_PASSWORD")
+DEFAULT_FROM_EMAIL = environment("DEFAULT_FROM_EMAIL")
+
+
+PRODUCTS_SERVICE_URL = environment("PRODUCTS_SERVICE_URL")
+AUTH_SERVICE_URL = environment("AUTH_SERVICE_URL")

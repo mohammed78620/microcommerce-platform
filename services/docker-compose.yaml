@@ -1,4 +1,5 @@
 services:
+
     emails:
         build: ./emails
         command: bash -c "uv run python3 manage.py runserver 0.0.0.0:8001"
@@ -31,6 +32,16 @@ services:
         restart: always
         depends_on:
             - orders_db
+    auth_service:
+        build: ./auth_service
+        command: bash -c "uv run python3 manage.py runserver 0.0.0.0:8004"
+        volumes:
+            - ./auth_service:/app
+        ports:
+            - 8004:8004
+        restart: always
+        depends_on:
+            - auth_service_db
 
 
     emails_db:
@@ -69,6 +80,18 @@ services:
         - POSTGRES_DB=admin
         ports:
         - "5434:5432"
+    
+    auth_service_db:
+        image: postgres:14.2-alpine
+        restart: unless-stopped
+        volumes:
+        - .postgres_data/products_data:/var/lib/postgres
+        environment:
+        - POSTGRES_USER=admin
+        - POSTGRES_PASSWORD=root
+        - POSTGRES_DB=admin
+        ports:
+        - "5435:5432"
 
 
     rabbitmq:

@@ -11,6 +11,13 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 from pathlib import Path
+import os
+
+import environ
+
+environment = environ.FileAwareEnv(
+    DEBUG=(bool, True),
+)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,10 +27,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-usn(868g5ljd^_dw$mzsowfw09#y(25h(-pe*z*7r3u$7box8*"
+SECRET_KEY = "f!&nc$=8(u)m+x@h7m4*b*#swbf((jh@1+)!t+ut-97n0ytv3y"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = environment("DEBUG")
 
 ALLOWED_HOSTS = []
 
@@ -84,11 +91,11 @@ config.read("config.ini")
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": config["DATABASE"]["NAME"],
-        "USER": config["DATABASE"]["USER"],
-        "PASSWORD": config["DATABASE"]["PASSWORD"],
-        "HOST": config["DATABASE"]["HOST"],
-        "PORT": config["DATABASE"]["PORT"],
+        "NAME": os.environ.get("DATABASE_NAME", config["DATABASE"]["NAME"]),
+        "USER": os.environ.get("DATABASE_USER", config["DATABASE"]["USER"]),
+        "PASSWORD": os.environ.get("DATABASE_PASSWORD", config["DATABASE"]["PASSWORD"]),
+        "HOST": os.environ.get("DATABASE_HOST", config["DATABASE"]["HOST"]),
+        "PORT": os.environ.get("DATABASE_PORT", config["DATABASE"]["PORT"]),
     }
 }
 
@@ -111,6 +118,19 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+
+# TODO: add envar to turn off auth
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "api.authentication.RemoteJWTAuthentication",
+    ],
+    # "DEFAULT_PERMISSION_CLASSES": [
+    #     "rest_framework.permissions.IsAuthenticated",
+    # ],
+    # "DEFAULT_PERMISSION_CLASSES": [
+    #     "rest_framework.permissions.AllowAny",  # testing without auth
+    # ],
+}
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
