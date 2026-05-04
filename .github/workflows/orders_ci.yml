@@ -1,0 +1,65 @@
+# This is a basic workflow to help you get started with Actions 
+
+name: Main CI/CD 
+ 
+# Controls when the workflow will run
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+
+  unittest:
+      runs-on: ubuntu-latest
+
+      services:
+        orders-db:
+          image: postgres:14
+          ports:
+            - 5432:5432
+          env:
+            POSTGRES_PASSWORD: root
+            POSTGRES_USER: admin
+            POSTGRES_DB: admin
+          options: >-
+            --health-cmd pg_isready
+            --health-interval 10s
+            --health-timeout 5s
+            --health-retries 5
+
+      defaults:
+        run:
+          working-directory: services/orders
+
+      steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.11.6"
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Install the project
+        env:
+          VAI_USER: "github_ci"
+          VAI_ENV: "test"
+        run: uv sync --locked --group dev
+
+      - name: Run tests
+        env:
+          VAI_USER: "github_ci"
+          VAI_ENV: "test"
+          ALLOWED_HOSTS: "localhost,127.0.0.1"
+          DATABASE_USER: admin
+          DATABASE_PASSWORD: root
+          DATABASE_HOST: "localhost"
+          DATABASE_PORT: "5432"
+          DATABASE_NAME: order-db
+        run: |
+          uv run python manage.py test --buffer

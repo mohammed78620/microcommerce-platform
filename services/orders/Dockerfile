@@ -4,10 +4,10 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
 # Install system deps for psycopg2
-RUN apt-get update && apt-get install -y \
-    gcc \
-    libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
+# RUN apt-get update && apt-get install -y \
+#     gcc \
+#     libpq-dev \
+#     && rm -rf /var/lib/apt/lists/*
 
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:0.11.6 /uv /bin/

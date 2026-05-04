@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 import environ
 
@@ -90,11 +91,11 @@ config.read("config.ini")
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": config["DATABASE"]["NAME"],
-        "USER": config["DATABASE"]["USER"],
-        "PASSWORD": config["DATABASE"]["PASSWORD"],
-        "HOST": config["DATABASE"]["HOST"],
-        "PORT": config["DATABASE"]["PORT"],
+        "NAME": os.environ.get("DATABASE_NAME", config["DATABASE"]["NAME"]),
+        "USER": os.environ.get("DATABASE_USER", config["DATABASE"]["USER"]),
+        "PASSWORD": os.environ.get("DATABASE_PASSWORD", config["DATABASE"]["PASSWORD"]),
+        "HOST": os.environ.get("DATABASE_HOST", config["DATABASE"]["HOST"]),
+        "PORT": os.environ.get("DATABASE_PORT", config["DATABASE"]["PORT"]),
     }
 }
 
