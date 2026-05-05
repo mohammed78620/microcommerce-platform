@@ -180,3 +180,32 @@ class OrderViewSetCreateTest(TestCase):
         # Token included in email payload
         email_payload = mock_publish.call_args[0][0]
         self.assertEqual(email_payload["token"], "bearer-xyz")
+
+
+class OrderViewSetCancelTest(TestCase):
+    def setUp(self):
+        self.factory = APIRequestFactory()
+        self.user = User.objects.create_user(username="testuser", password="testpass")
+        self.order = Order.objects.create(user_id=self.user.id)
+        self.view = OrderViewSet.as_view({"post": "cancel"})
+        self.valid_payload = {
+            "order_items": [
+                {"product_id": 1, "quantity": 2},
+                {"product_id": 2, "quantity": 1},
+            ]
+        }
+
+    def _make_request(self, data, pk):
+        request = self.factory.post(f"/orders/{pk}/cancel", data, format="json")
+        force_authenticate(request, user=self.user)
+        return request
+
+    def test_cancel_success(self):
+        request = self._make_request(self.valid_payload, self.order.pk)
+        response = self.view(request, self.order.pk)
+        self.assertEquals(response.status_code, 200)
+
+    def test_cancel_fail(self):
+        request = self._make_request(self.valid_payload, self.order.pk)
+        response = self.view(request, 100000)
+        self.assertEquals(response.status_code, 404)
