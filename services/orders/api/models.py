@@ -3,17 +3,18 @@ import uuid
 
 
 class Order(models.Model):
-    OPEN = "open"
-    CLOSE = "close"
-    CANCELLED = "cancelled"
+    OPEN = "Open"
+    CLOSE = "Close"
+    CANCELLED = "Cancelled"
 
     STATUS_CHOICES = [
         (OPEN, "Open"),
         (CLOSE, "Close"),
+        (CANCELLED, "Cancelled"),
     ]
 
     user_id = models.IntegerField(db_index=True)
-    status = models.CharField(max_length=6, choices=STATUS_CHOICES, default=OPEN)
+    status = models.CharField(max_length=9, choices=STATUS_CHOICES, default=OPEN)
 
     class Meta:
         db_table = "api_order"

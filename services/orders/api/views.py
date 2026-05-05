@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 from django.db import transaction
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
+from rest_framework.permissions import AllowAny
 
 from .models import Order, OrderItem
 from .serializers import OrderSerializer, OrderItemSerializer
@@ -106,3 +107,14 @@ class OrderViewSet(viewsets.ViewSet):
         publish_message(email_payload, "send-order-email")
 
         return Response("Order created", status=status.HTTP_201_CREATED)
+
+    def cancel(self, request, pk):
+        try:
+            order = Order.objects.get(pk=pk)
+        except Order.DoesNotExist:
+            return Response("order does not exist", status=status.HTTP_404_NOT_FOUND)
+        with transaction.atomic():
+            order.status = Order.CANCELLED
+            order.save()
+
+        return Response(f"Order {pk} has been cancelled", status=status.HTTP_200_OK)
