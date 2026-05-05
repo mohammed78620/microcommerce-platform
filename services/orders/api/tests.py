@@ -203,9 +203,9 @@ class OrderViewSetCancelTest(TestCase):
     def test_cancel_success(self):
         request = self._make_request(self.valid_payload, self.order.pk)
         response = self.view(request, self.order.pk)
-        self.assertEquals(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)
 
     def test_cancel_fail(self):
         request = self._make_request(self.valid_payload, self.order.pk)
         response = self.view(request, 100000)
-        self.assertEquals(response.status_code, 404)
+        self.assertEqual(response.status_code, 404)
