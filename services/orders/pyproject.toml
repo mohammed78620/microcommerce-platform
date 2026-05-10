@@ -15,6 +15,7 @@ dependencies = [
     "django-environ>=0.13.0",
     "debugpy>=1.8.20",
     "djangorestframework-simplejwt>=5.4.0",
+    "stripe>=15.1.0",
 ]
 
 [dependency-groups]

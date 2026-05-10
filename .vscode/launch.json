@@ -1,0 +1,30 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Remote Attach orders",
+            "type": "debugpy",
+            "request": "attach",
+            "preLaunchTask": "wait-for-debugpy",
+            "connect": {
+                "host": "localhost",
+                "port": 5678
+            },
+            "pathMappings": [
+                {
+                    "localRoot": "${workspaceFolder}/services/orders",
+                    "remoteRoot": "/app"
+                }
+            ],
+            "django": true,
+            "justMyCode": true
+        },
+        {
+            "type": "chrome",
+            "request": "launch",
+            "name": "Launch Edge against localhost",
+            "url": "http://localhost:3000",
+            "webRoot": "${workspaceFolder}"
+        }
+    ]
+}

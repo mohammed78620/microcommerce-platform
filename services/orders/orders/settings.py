@@ -14,13 +14,19 @@ from pathlib import Path
 import os
 
 import environ
+import stripe
 
 environment = environ.FileAwareEnv(
     DEBUG=(bool, True),
+    STRIPE_SECRET_KEY=(str, None),
+    STRIPE_PUBLISHABLE_KEY=(str, None),
+    STRIPE_WEBHOOK_SECRET=(str, None),
 )
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+environ.Env.read_env(BASE_DIR / ".env")
 
 
 # Quick-start development settings - unsuitable for production
@@ -158,3 +164,13 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 CORS_ORIGIN_ALLOW_ALL = True
 
 APPEND_SLASH = True
+
+if DEBUG:
+    STRIPE_MODE = "test"
+else:
+    STRIPE_MODE = "live"
+
+STRIPE_SECRET_KEY = environment("STRIPE_SECRET_KEY")
+STRIPE_PUBLISHABLE_KEY = environment("STRIPE_PUBLISHABLE_KEY")
+STRIPE_WEBHOOK_SECRET = environment("STRIPE_WEBHOOK_SECRET")
+stripe.api_key = STRIPE_SECRET_KEY

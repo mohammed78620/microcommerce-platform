@@ -5,8 +5,8 @@ from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIRequestFactory, force_authenticate
 
-from api.models import Order, OrderItem
-from api.views import OrderViewSet
+from .models import Order, OrderItem
+from .views.views import OrderViewSet
 
 User = get_user_model()
 
@@ -79,15 +79,14 @@ class OrderViewSetCreateTest(TestCase):
     # Product reservation tests
     # ------------------------------------------------------------------
 
-    @patch("api.views.get_jwt_token", return_value="mock-jwt-token")
-    @patch("api.views.bulk_reserve_order", return_value=(False, 42))
+    @patch("api.views.views.get_jwt_token", return_value="mock-jwt-token")
+    @patch("api.services.bulk_reserve_order", return_value=(False, 42))
     def test_create_raises_when_product_out_of_stock(self, mock_reserve, mock_jwt):
         request = self._make_request(self.valid_payload)
+        response = self.view(request)
 
-        with self.assertRaises(ValueError) as ctx:
-            self.view(request)
-
-        self.assertIn("42", str(ctx.exception))
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+        self.assertIn("42", response.data)
         mock_reserve.assert_called_once_with(
             "mock-jwt-token",
             [{"product_id": 1, "quantity": 2}, {"product_id": 2, "quantity": 1}],
@@ -97,9 +96,9 @@ class OrderViewSetCreateTest(TestCase):
     # Happy path
     # ------------------------------------------------------------------
 
-    @patch("api.views.get_jwt_token", return_value="mock-jwt-token")
-    @patch("api.views.bulk_reserve_order", return_value=(True, None))
-    @patch("api.views.publish_message")
+    @patch("api.views.views.get_jwt_token", return_value="mock-jwt-token")
+    @patch("api.services.bulk_reserve_order", return_value=(True, None))
+    @patch("api.services.publish_message")
     def test_create_order_success(self, mock_publish, mock_reserve, mock_jwt):
         request = self._make_request(self.valid_payload)
         response = self.view(request)
@@ -119,9 +118,9 @@ class OrderViewSetCreateTest(TestCase):
         self.assertEqual(email_payload["user_id"], self.user.id)
         self.assertEqual(email_payload["token"], "mock-jwt-token")
 
-    @patch("api.views.get_jwt_token", return_value="mock-jwt-token")
-    @patch("api.views.bulk_reserve_order", return_value=(True, None))
-    @patch("api.views.publish_message")
+    @patch("api.views.views.get_jwt_token", return_value="mock-jwt-token")
+    @patch("api.services.bulk_reserve_order", return_value=(True, None))
+    @patch("api.services.publish_message")
     def test_create_uses_authenticated_user_id(self, mock_publish, mock_reserve, mock_jwt):
         request = self._make_request(self.valid_payload)
         self.view(request)
@@ -133,9 +132,9 @@ class OrderViewSetCreateTest(TestCase):
     # Failure / rollback tests
     # ------------------------------------------------------------------
 
-    @patch("api.views.get_jwt_token", return_value="mock-jwt-token")
-    @patch("api.views.bulk_reserve_order", return_value=(True, None))
-    @patch("api.views.publish_message")
+    @patch("api.views.views.get_jwt_token", return_value="mock-jwt-token")
+    @patch("api.services.bulk_reserve_order", return_value=(True, None))
+    @patch("api.services.publish_message")
     @patch("api.models.OrderItem.objects.bulk_create", side_effect=Exception("DB error"))
     def test_create_publishes_release_message_on_db_failure(
         self, mock_bulk_create, mock_publish, mock_reserve, mock_jwt
@@ -143,6 +142,7 @@ class OrderViewSetCreateTest(TestCase):
         request = self._make_request(self.valid_payload)
         response = self.view(request)
 
+        # view catches the exception and returns 400
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
         # release-product message must be sent; no email message
@@ -150,9 +150,9 @@ class OrderViewSetCreateTest(TestCase):
         call_args = mock_publish.call_args
         self.assertEqual(call_args[0][1], "release-product")
 
-    @patch("api.views.get_jwt_token", return_value="mock-jwt-token")
-    @patch("api.views.bulk_reserve_order", return_value=(True, None))
-    @patch("api.views.publish_message")
+    @patch("api.views.views.get_jwt_token", return_value="mock-jwt-token")
+    @patch("api.services.bulk_reserve_order", return_value=(True, None))
+    @patch("api.services.publish_message")
     @patch("api.models.OrderItem.objects.bulk_create", side_effect=Exception("DB error"))
     def test_create_rolls_back_order_on_db_failure(self, mock_bulk_create, mock_publish, mock_reserve, mock_jwt):
         request = self._make_request(self.valid_payload)
@@ -166,9 +166,9 @@ class OrderViewSetCreateTest(TestCase):
     # JWT token forwarding
     # ------------------------------------------------------------------
 
-    @patch("api.views.get_jwt_token", return_value="bearer-xyz")
-    @patch("api.views.bulk_reserve_order", return_value=(True, None))
-    @patch("api.views.publish_message")
+    @patch("api.views.views.get_jwt_token", return_value="bearer-xyz")
+    @patch("api.services.bulk_reserve_order", return_value=(True, None))
+    @patch("api.services.publish_message")
     def test_create_forwards_jwt_to_reserve_and_email(self, mock_publish, mock_reserve, mock_jwt):
         request = self._make_request(self.valid_payload)
         self.view(request)
