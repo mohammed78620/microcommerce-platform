@@ -1,0 +1,36 @@
+/* frontend/src/components/checkout.css */
+.checkout-container {
+  max-width: 500px;
+  margin: 50px auto;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+.pay-button {
+  width: 100%;
+  padding: 12px;
+  background-color: #5469d4;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.pay-button:disabled {
+  background-color: #ccc;
+}
+
+.error-message {
+  color: #fa755a;
+  padding: 10px;
+  background-color: #ffe6e6;
+  border-radius: 4px;
+  margin-bottom: 15px;
+}
+
+.success-message {
+  text-align: center;
+  padding: 30px;
+  color: #28a745;
+}
