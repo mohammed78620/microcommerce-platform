@@ -6,7 +6,7 @@ from rest_framework import status
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 from api.models import Order, OrderItem
-from api.views import OrderViewSet
+from services.orders.api.views.views import OrderViewSet
 
 User = get_user_model()
 

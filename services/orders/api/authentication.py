@@ -27,13 +27,12 @@ class RemoteJWTAuthentication(BaseAuthentication):
 
         if response.status_code != 200:
             raise AuthenticationFailed("Invalid or expired token")
-        
 
         user_data = response.json()
-        return (FakeUser(user_data), token)
+        return (User(user_data), token)
 
 
-class FakeUser:
+class User:
     def __init__(self, data):
         self.id = data.get("id")
         self.email = data.get("email")
