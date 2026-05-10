@@ -1,0 +1,24 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "docker-compose-up",
+            "type": "shell",
+            "command": "docker-compose -f ${workspaceFolder}/services/docker-compose.dev.yaml up -d emails emails-db products products-db orders orders-db products-consumer --build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            }
+        },
+        {
+            "label": "wait-for-debugpy",
+            "type": "shell",
+            "command": "powershell -command \"Start-Sleep 2; while (!(Test-NetConnection localhost -Port 5678).TcpTestSucceeded) { Write-Host 'Waiting for debugpy...'; Start-Sleep 1 }; Write-Host 'debugpy ready!'\"",
+            "dependsOn": "docker-compose-up",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        }
+    ]
+}

@@ -28,9 +28,13 @@ class CartSerializer(serializers.ModelSerializer):
 
 class Order(models.Model):
     OPEN = "Open"
+<<<<<<< HEAD
     CONFIRMED = "Confirmed"
     CLOSE = "Close"
     REFUNDED = "Refunded"
+=======
+    CLOSE = "Close"
+>>>>>>> main
     CANCELLED = "Cancelled"
 
     STATUS_CHOICES = [
