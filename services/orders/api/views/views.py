@@ -82,6 +82,17 @@ class OrderViewSet(viewsets.ViewSet):
             return Response("Failed to create order", status=400)
         return Response("Order created", status=201)
 
+    def cancel(self, request, pk):
+        try:
+            order = Order.objects.get(pk=pk)
+        except Order.DoesNotExist:
+            return Response("order does not exist", status=status.HTTP_404_NOT_FOUND)
+        with transaction.atomic():
+            order.status = Order.CANCELLED
+            order.save()
+
+        return Response(f"Order {pk} has been cancelled", status=status.HTTP_200_OK)
+
 
 class CartViewSet(viewsets.ViewSet):
     def add(self, request, product_id):
@@ -154,14 +165,3 @@ class CartViewSet(viewsets.ViewSet):
         cart.delete()
 
         return Response({"order_id": 1, "client_secret": intent.client_secret}, status=201)
-
-    def cancel(self, request, pk):
-        try:
-            order = Order.objects.get(pk=pk)
-        except Order.DoesNotExist:
-            return Response("order does not exist", status=status.HTTP_404_NOT_FOUND)
-        with transaction.atomic():
-            order.status = Order.CANCELLED
-            order.save()
-
-        return Response(f"Order {pk} has been cancelled", status=status.HTTP_200_OK)
