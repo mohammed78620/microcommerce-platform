@@ -12,7 +12,11 @@ export default function CartPage() {
   }, []);
 
   useEffect(() => {
-    calculateTotal();
+    const sum = cartItems.reduce((acc, item) => {
+      return acc + (item.price * item.quantity);
+    }, 0);
+
+    setTotal(sum);
   }, [cartItems]);
 
   const fetchCart = async () => {
@@ -38,12 +42,6 @@ export default function CartPage() {
     }
   };
 
-  const calculateTotal = () => {
-    const sum = cartItems.reduce((acc, item) => {
-      return acc + (item.price * item.quantity);
-    }, 0);
-    setTotal(sum);
-  };
 
   const handleRemoveItem = async (productId) => {
     try {

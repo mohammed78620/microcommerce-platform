@@ -10,6 +10,7 @@ from rest_framework.exceptions import AuthenticationFailed
 
 from .models import Order, OrderItem
 from microservices.producer import publish_message
+from orders import settings
 
 
 def get_jwt_token(request):
@@ -28,11 +29,8 @@ def get_jwt_token(request):
 def bulk_reserve_order(token, items_data: List[Dict[str, int]]):
 
     try:
-        # TODO: move URL to environment variable
-        # TODO: authenticate the token using JWT_SECRET.
-        # Make sure JWT_SECRET the same in auth_service and orders
         response = requests.post(
-            "http://products:8002/api/products/bulk_reserve/",
+            f"{settings.PRODUCTS_SERVICE_URL}api/products/bulk_reserve/",
             json={"items": items_data},
             headers={
                 "Authorization": f"Bearer {token}",
@@ -65,9 +63,9 @@ def create_order_from_items(user, token, order_items_data: List[Dict[str, int]])
                     for item in order_items_data
                 ]
             )
-    except Exception:
+    except Exception as e:
         publish_message(order_items_data, "release-product")
-        raise  # let the caller decide the HTTP response
+        raise e
 
     publish_message({"user_id": user.id, "token": token, "order_items": order_items_data}, "send-order-email")
     return order

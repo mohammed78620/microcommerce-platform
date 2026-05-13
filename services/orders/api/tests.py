@@ -17,23 +17,31 @@ class OrderViewSetListTest(TestCase):
         self.user = User.objects.create_user(username="testuser", password="testpass")
         self.view = OrderViewSet.as_view({"get": "list"})
 
-    def test_list_returns_orders_with_items(self):
+    @patch("api.views.views.get_product")
+    @patch("api.views.views.get_jwt_token")
+    def test_list_returns_orders_with_items(self, mock_get_jwt, mock_get_product):
+        mock_get_jwt.return_value = "fake-token"
+        mock_get_product.return_value = {"name": "Test Product", "price": "9.99"}
+
         order = Order.objects.create(user_id=self.user.id)
         OrderItem.objects.create(order=order, product_id=1, quantity=2)
 
-        request = self.factory.get("/orders/")
+        request = self.factory.get(f"/orders/{self.user.id}/")
         force_authenticate(request, user=self.user)
-        response = self.view(request)
+        response = self.view(request, user_id=self.user.id)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
-        self.assertIn("order_items", response.data[0])
-        self.assertEqual(len(response.data[0]["order_items"]), 1)
+        self.assertIn("items", response.data[0])  # key is "items" not "order_items"
+        self.assertEqual(len(response.data[0]["items"]), 1)
 
-    def test_list_returns_empty_when_no_orders(self):
-        request = self.factory.get("/orders/")
+    @patch("api.views.views.get_jwt_token")
+    def test_list_returns_empty_when_no_orders(self, mock_get_jwt):
+        mock_get_jwt.return_value = "fake-token"
+
+        request = self.factory.get(f"/orders/{self.user.id}/")
         force_authenticate(request, user=self.user)
-        response = self.view(request)
+        response = self.view(request, user_id=self.user.id)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, [])

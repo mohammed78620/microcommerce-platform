@@ -1,10 +1,31 @@
+
+
+
 services:
 
+
+    frontend:
+        build: ./frontend
+        container_name: react_app
+        ports:
+            - "3000:3000"
+        volumes:
+            - ./frontend:/app
+            - /app/node_modules
+        environment:
+            - CHOKIDAR_USEPOLLING=true
+            - WATCHPACK_POLLING=true
+            - WDS_SOCKET_PORT=3000
+        stdin_open: true
+        tty: true
+        networks:
+            - microservices-network
+
     emails:
-        build: ./emails
+        build: ./services/emails
         command: bash -c "uv run python3 manage.py runserver 0.0.0.0:8001"
         volumes:
-            - ./emails:/app
+            - ./services/emails:/app
             - /app/.venv
         ports:
             - 8001:8001
@@ -16,7 +37,7 @@ services:
             - microservices-network
     
     emails-consumer:
-        build: ./emails
+        build: ./services/emails
         command: uv run python3 manage.py start_consumer
         depends_on:
             - rabbitmq
@@ -26,13 +47,13 @@ services:
             - microservices-network
 
     products:
-        build: ./products
+        build: ./services/products
         # command: bash -c "uv run python3 manage.py runserver 0.0.0.0:8002"
         command: >
             sh -c "uv run python3 manage.py seed_products &&
                 uv run python3 manage.py runserver 0.0.0.0:8002"
         volumes:
-            - ./products:/app
+            - ./services/products:/app
             - /app/.venv
         ports:
             - 8002:8002
@@ -44,7 +65,7 @@ services:
             - microservices-network
     
     products-consumer:
-        build: ./products
+        build: ./services/products
         command: uv run python3 manage.py start_consumer
         depends_on:
             - rabbitmq
@@ -54,10 +75,10 @@ services:
             - microservices-network
 
     orders:
-        build: ./orders
+        build: ./services/orders
         # command: bash -c "uv run python3 manage.py runserver 0.0.0.0:8003"
         volumes:
-            - ./orders:/app
+            - ./services/orders:/app
             - /app/.venv
         ports:
             - 8003:8003
@@ -71,13 +92,13 @@ services:
             - microservices-network
 
     auth-service:
-        build: ./auth_service
+        build: ./services/auth_service
         command: >
             sh -c "uv run python3 manage.py wait_for_db &&
              uv run python3 manage.py seed_users &&
              uv run python3 manage.py runserver 0.0.0.0:8004"
         volumes:
-            - ./auth_service:/app
+            - ./services/auth_service:/app
             - /app/.venv
         ports:
             - 8004:8004

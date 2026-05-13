@@ -1,6 +1,6 @@
 from decimal import Decimal
 from typing import Dict, List
-import json
+from collections import defaultdict
 import stripe
 
 import requests
@@ -16,23 +16,32 @@ from ..models import Order, OrderItem, Cart, CartItem, Payment, CartItemSerializ
 from ..serializers import OrderSerializer, OrderItemSerializer
 from ..services import create_order_from_items, get_jwt_token
 from microservices.producer import publish_message
+from orders import settings
+
+
+def get_product(product_id: int, token: str) -> Dict:
+    try:
+        response = requests.get(
+            f"{settings.PRODUCTS_SERVICE_URL}api/products/{product_id}/",
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Accept": "application/json",
+            },
+            timeout=5,
+        )
+        response = response.json()
+
+    except requests.exceptions.RequestException:
+        raise AuthenticationFailed("Auth service unreachable")
+    return response
 
 
 def calculate_total(order_items_data: List[Dict[str, int]], token: str) -> int:
     try:
-        # TODO: move URL to environment variable
         total = Decimal("0")
         for item in order_items_data:
             product_id = item["product_id"]
-            response = requests.get(
-                f"http://products:8002/api/products/{product_id}/",
-                headers={
-                    "Authorization": f"Bearer {token}",
-                    "Accept": "application/json",
-                },
-                timeout=5,
-            )
-            response = response.json()
+            response = get_product(product_id=product_id, token=token)
             price = Decimal(str(response["price"]))
             quantity = Decimal(str(item["quantity"]))
             item_total = price * quantity
@@ -45,7 +54,7 @@ def calculate_total(order_items_data: List[Dict[str, int]], token: str) -> int:
 def get_product(product_id: int, token: str) -> Dict:
     try:
         response = requests.get(
-            f"http://products:8002/api/products/{product_id}/",
+            f"{settings.PRODUCTS_SERVICE_URL}api/products/{product_id}/",
             headers={
                 "Authorization": f"Bearer {token}",
                 "Accept": "application/json",
@@ -58,17 +67,47 @@ def get_product(product_id: int, token: str) -> Dict:
 
 
 class OrderViewSet(viewsets.ViewSet):
-    def list(self, request):
-        orders = Order.objects.all()
-        serializer = OrderSerializer(orders, many=True)
-        data = serializer.data
-        for i, item in enumerate(data):
-            order_id = item["id"]
-            order_items = Order.objects.get(id=order_id).order_items.all()
-            order_item_serializer = OrderItemSerializer(order_items, many=True)
-            data[i]["order_items"] = order_item_serializer.data
+    def list(self, request, user_id: int):
+        """
+        get orders from specific user
 
-        return Response(data, status=status.HTTP_200_OK)
+        Args:
+            user_id (int): the users id
+
+        Returns:
+            List[List[Dict]]: return a list of orders where each order contains the products and quantity
+        """
+        order_items = OrderItem.objects.filter(order__user_id=user_id).select_related("order")
+
+        if not order_items.count() > 0:
+            return Response([], status=status.HTTP_200_OK)
+
+        token = get_jwt_token(request)
+        product_ids = {item.product_id for item in order_items}
+        products = {pid: get_product(product_id=pid, token=token) for pid in product_ids}
+
+        # Get order statuses
+        orders = Order.objects.filter(user_id=user_id)
+
+        order_statuses = {order.id: order.status for order in orders}
+
+        orders_map = defaultdict(list)
+        for item in order_items:
+            product = products.get(item.product_id, {})
+            orders_map[item.order_id].append(
+                {
+                    **OrderItemSerializer(item).data,
+                    "name": product.get("name"),
+                    "price": float(product.get("price")),
+                }
+            )
+
+        # Add order status to each order
+        result = []
+        for order_id, items in orders_map.items():
+            result.append({"order_id": order_id, "status": order_statuses.get(order_id), "items": items})
+
+        return Response(result, status=status.HTTP_200_OK)
 
     def create(self, request):
         order_items_data = request.data.pop("order_items", [])
@@ -151,17 +190,17 @@ class CartViewSet(viewsets.ViewSet):
         ]
         try:
             order = create_order_from_items(user=user, token=get_jwt_token(request), order_items_data=order_items_data)
+            total = calculate_total(order_items_data, get_jwt_token(request))
+            intent = stripe.PaymentIntent.create(amount=total, currency="gbp", metadata={"order_id": order.pk})
+            Payment.objects.create(
+                order_id=order,
+                intent_id=intent.id,
+                total=total,
+            )
+            cart.delete()
         except ValueError as e:
             return Response(str(e), status=409)
-        except Exception:
-            return Response("Failed to create order", status=400)
-        total = calculate_total(order_items_data, get_jwt_token(request))
-        intent = stripe.PaymentIntent.create(amount=total, currency="gbp", metadata={"order_id": 1})
-        Payment.objects.create(
-            order_id=order,
-            intent_id=intent.id,
-            total=total,
-        )
-        cart.delete()
+        except Exception as e:
+            return Response(f"Failed to create order {e}", status=400)
 
         return Response({"order_id": 1, "client_secret": intent.client_secret}, status=201)

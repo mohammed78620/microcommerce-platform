@@ -5,6 +5,8 @@ from django.contrib.auth.models import User
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from django.forms.models import model_to_dict
+from rest_framework_simplejwt.views import TokenObtainPairView
+from django.contrib.auth import authenticate
 
 
 class UserAPIView(APIView):
@@ -23,3 +25,22 @@ class UserAPIView(APIView):
 def verify_token(request):
     user = request.user
     return Response({"id": user.id, "email": user.email})
+
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+
+        username = request.data.get("username")
+        password = request.data.get("password")
+        user = authenticate(username=username, password=password)
+
+        if user:
+            response.data["user"] = {
+                "id": user.id,
+                "username": user.username,
+                "email": getattr(user, "email", ""),
+            }
+
+        return response
