@@ -21,6 +21,9 @@ environment = environ.FileAwareEnv(
     STRIPE_SECRET_KEY=(str, None),
     STRIPE_PUBLISHABLE_KEY=(str, None),
     STRIPE_WEBHOOK_SECRET=(str, None),
+    PRODUCTS_SERVICE_URL=(str, "http://products:8002/"),
+    AUTH_SERVICE_URL=(str, "http://auth-service:8004/"),
+    RABBITMQ_HOST=(str, "rabbitmq"),
 )
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -174,3 +177,6 @@ STRIPE_SECRET_KEY = environment("STRIPE_SECRET_KEY")
 STRIPE_PUBLISHABLE_KEY = environment("STRIPE_PUBLISHABLE_KEY")
 STRIPE_WEBHOOK_SECRET = environment("STRIPE_WEBHOOK_SECRET")
 stripe.api_key = STRIPE_SECRET_KEY
+
+PRODUCTS_SERVICE_URL = environment("PRODUCTS_SERVICE_URL")
+AUTH_SERVICE_URL = environment("AUTH_SERVICE_URL")

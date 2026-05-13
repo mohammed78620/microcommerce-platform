@@ -2,10 +2,27 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Remote Attach orders",
+            "name": "Python: docker compose then Remote Attach orders",
             "type": "debugpy",
             "request": "attach",
             "preLaunchTask": "wait-for-debugpy",
+            "connect": {
+                "host": "localhost",
+                "port": 5678
+            },
+            "pathMappings": [
+                {
+                    "localRoot": "${workspaceFolder}/services/orders",
+                    "remoteRoot": "/app"
+                }
+            ],
+            "django": true,
+            "justMyCode": true
+        },
+                {
+            "name": "Python: Remote Attach orders",
+            "type": "debugpy",
+            "request": "attach",
             "connect": {
                 "host": "localhost",
                 "port": 5678

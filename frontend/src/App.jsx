@@ -6,6 +6,8 @@ import ProductsPage from './components/products';
 import CartPage from './components/cart';
 import CheckoutPage from './components/checkout';
 import './App.css';
+import OrdersPage from './components/orders';
+
 
 function App() {
   const [token, setToken] = useState(null);
@@ -40,6 +42,7 @@ function App() {
           <nav className="nav-links">
             <a href="/products">Products</a>
             <a href="/cart">Cart</a>
+            <a href="/orders">Orders</a>
             <button onClick={handleLogout} className="logout-button">
               Logout
             </button>
@@ -50,6 +53,7 @@ function App() {
           <Route path="/cart" element={<CartPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/" element={<Navigate to="/products" />} />
+          <Route path="/orders" element={<OrdersPage />} />
         </Routes>
       </div>
     </BrowserRouter>

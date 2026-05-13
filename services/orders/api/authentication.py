@@ -1,6 +1,7 @@
 import requests
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
+from orders import settings
 
 
 class RemoteJWTAuthentication(BaseAuthentication):
@@ -13,11 +14,8 @@ class RemoteJWTAuthentication(BaseAuthentication):
         token = auth_header.split(" ")[1]
 
         try:
-            # TODO: move URL to environment variable
-            # TODO: authenticate the token using JWT_SECRET.
-            # Make sure JWT_SECRET the same in auth_service and orders
             response = requests.get(
-                "http://auth-service:8004/api/auth/verify/",
+                f"{settings.AUTH_SERVICE_URL}api/auth/verify/",
                 headers={"Authorization": f"Bearer {token}"},
                 timeout=5,
             )

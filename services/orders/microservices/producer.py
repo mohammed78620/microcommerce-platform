@@ -1,10 +1,9 @@
 import pika
 import json
+from orders import settings
 
-# TODO: move to settings.py
-RABBITMQ_HOST = "rabbitmq"
 try:
-    connection = pika.BlockingConnection(pika.ConnectionParameters(RABBITMQ_HOST))
+    connection = pika.BlockingConnection(pika.ConnectionParameters(settings.RABBITMQ_HOST))
     channel = connection.channel()
     channel.queue_declare(
         queue="release-stock",
