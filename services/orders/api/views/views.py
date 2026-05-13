@@ -79,12 +79,16 @@ class OrderViewSet(viewsets.ViewSet):
         """
         order_items = OrderItem.objects.filter(order__user_id=user_id).select_related("order")
 
+        if not order_items.count() > 0:
+            return Response([], status=status.HTTP_200_OK)
+
         token = get_jwt_token(request)
         product_ids = {item.product_id for item in order_items}
         products = {pid: get_product(product_id=pid, token=token) for pid in product_ids}
 
         # Get order statuses
         orders = Order.objects.filter(user_id=user_id)
+
         order_statuses = {order.id: order.status for order in orders}
 
         orders_map = defaultdict(list)
