@@ -6,32 +6,64 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [message, setMessage] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [activeSearch, setActiveSearch] = useState('');
 
   useEffect(() => {
-    fetchProducts();
+    fetchProducts('');
   }, []);
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (query = '') => {
     try {
-      setLoading(true);
-      const response = await fetch(`${process.env.REACT_APP_PRODUCTS_URL}/api/products/`, {
+      query ? setSearchLoading(true) : setLoading(true);
+
+      let url, method, body;
+
+      if (query.trim()) {
+        url = `${process.env.REACT_APP_PRODUCTS_URL}/api/products/search/`;
+        method = 'POST';
+        body = JSON.stringify({ search: query.trim() });
+      } else {
+        url = `${process.env.REACT_APP_PRODUCTS_URL}/api/products/?limit=10`;
+        method = 'GET';
+      }
+
+      const response = await fetch(url, {
+        method,
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'application/json',
         },
+        ...(body && { body }),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch products');
-      }
+      if (!response.ok) throw new Error('Failed to fetch products');
 
       const data = await response.json();
       setProducts(data);
+      setError(null);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
+      setSearchLoading(false);
     }
+  };
+
+  const handleSearch = () => {
+    setActiveSearch(searchQuery);
+    fetchProducts(searchQuery);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') handleSearch();
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    setActiveSearch('');
+    fetchProducts('');
   };
 
   const handleAddToCart = async (productId) => {
@@ -47,9 +79,7 @@ export default function ProductsPage() {
         }
       );
 
-      if (!response.ok) {
-        throw new Error('Failed to add to cart');
-      }
+      if (!response.ok) throw new Error('Failed to add to cart');
 
       setMessage('Added to cart!');
       setTimeout(() => setMessage(null), 2000);
@@ -73,10 +103,40 @@ export default function ProductsPage() {
         <a href="/cart" className="cart-link">View Cart</a>
       </div>
 
+      <div className="search-bar-wrapper">
+        <div className="search-bar">
+          <svg className="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clipRule="evenodd" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Search products..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className="search-input"
+          />
+          {searchQuery && (
+            <button className="clear-search-btn" onClick={handleClearSearch} aria-label="Clear search">
+              ✕
+            </button>
+          )}
+        </div>
+        <button
+          className="search-btn"
+          onClick={handleSearch}
+          disabled={searchLoading}
+        >
+          {searchLoading ? <span className="search-spinner" /> : 'Search'}
+        </button>
+      </div>
+
       {message && <div className="success-message">{message}</div>}
 
       {products.length === 0 ? (
-        <p className="no-products">No products available</p>
+        <p className="no-products">
+          {activeSearch ? `No products found for "${activeSearch}"` : 'No products available'}
+        </p>
       ) : (
         <div className="products-grid">
           {products.map((product) => (
