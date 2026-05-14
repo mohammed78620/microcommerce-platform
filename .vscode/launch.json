@@ -36,12 +36,15 @@
             "django": true,
             "justMyCode": true
         },
-        {
+        {   
+            "name": "Launch Chrome against localhost",
             "type": "chrome",
             "request": "launch",
-            "name": "Launch Edge against localhost",
             "url": "http://localhost:3000",
-            "webRoot": "${workspaceFolder}"
+            "webRoot": "${workspaceFolder}/frontend",
+            "sourceMapPathOverrides": {
+                "/app/src/*": "${workspaceFolder}/frontend/src/*"
+  }
         }
     ]
 }

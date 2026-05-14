@@ -6,6 +6,8 @@ from rest_framework.views import APIView
 from django.views import View
 from django.db import transaction
 from rest_framework.exceptions import APIException
+from rest_framework.request import Request
+from django.contrib.postgres.search import SearchVector
 
 from .models import Product
 from .serializers import ProductSerializer
@@ -19,7 +21,16 @@ class InsufficientStockError(APIException):
 
 class ProductViewSet(viewsets.ViewSet):
     def list(self, request):
+        limit = request.query_params.get("limit")
+
         products = Product.objects.all()
+
+        if limit:
+            try:
+                products = products[: int(limit)]
+            except ValueError:
+                return Response({"error": "limit must be an integer"}, status=status.HTTP_400_BAD_REQUEST)
+
         serializer = ProductSerializer(products, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -45,6 +56,24 @@ class ProductViewSet(viewsets.ViewSet):
         product = Product.objects.get(id=pk)
         product.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def search(self, request: Request):
+        """
+        search for relevant product based on query
+
+
+        Returns:
+            List[Dict]: List of products
+        """
+        body = json.loads(request.body)
+        search_query = body.get("search")
+
+        if not search_query or search_query is None:
+            return Response({"error": "No search query"}, status=status.HTTP_400_BAD_REQUEST)
+
+        products = Product.objects.annotate(search=SearchVector("name", "description")).filter(search=search_query)
+        serializer = ProductSerializer(products, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class ReserveStockView(APIView):
