@@ -24,6 +24,8 @@ RUN uv sync --frozen --no-install-project
 # Copy app
 COPY . .
 
+RUN chmod +x /app/entrypoint.sh
+
 ENV VIRTUAL_ENV=/app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
 

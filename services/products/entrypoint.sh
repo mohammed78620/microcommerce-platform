@@ -7,5 +7,5 @@ uv run manage.py makemigrations --noinput
 uv run manage.py migrate --noinput
 
 
-# 👇 THIS LINE IS KEY
 exec "$@"
+EOF

@@ -6,5 +6,5 @@ echo "Apply database migrations"
 uv run manage.py migrate --noinput
 
 
-# 👇 THIS LINE IS KEY
 exec "$@"
+EOF
