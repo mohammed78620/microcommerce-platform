@@ -22,7 +22,6 @@ services:
         build: ./services/emails
         command: uv run python3 manage.py start_consumer
         depends_on:
-            - rabbitmq
             - products-db
         restart: always
         networks:
@@ -42,7 +41,6 @@ services:
         restart: always
         depends_on:
             - products-db
-            - rabbitmq
         networks:
             - microservices-network
     
@@ -50,7 +48,6 @@ services:
         build: ./services/products
         command: uv run python3 manage.py start_consumer
         depends_on:
-            - rabbitmq
             - products-db
         restart: always
         networks:
@@ -69,7 +66,6 @@ services:
         depends_on:
             - orders-db
             - auth-service
-            - rabbitmq
         networks:
             - microservices-network
 
