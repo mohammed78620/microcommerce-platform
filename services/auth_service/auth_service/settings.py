@@ -28,6 +28,7 @@ SECRET_KEY = "f!&nc$=8(u)m+x@h7m4*b*#swbf((jh@1+)!t+ut-97n0ytv3y"
 environment = environ.FileAwareEnv(
     DEBUG=(bool, True),
     ALLOWED_HOSTS=(list, ["localhost", "127.0.0.1"]),
+    CORS_ALLOWED_ORIGINS=(list, ["http://localhost:3000"]),
 )
 
 ALLOWED_HOSTS = environment("ALLOWED_HOSTS")
@@ -58,10 +59,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-CORS_ALLOWED_ORIGINS = [
-    "https://d1d0aw4rn6ymob.cloudfront.net",
-    "http://localhost:3000",
-]
+CORS_ALLOWED_ORIGINS = environment("CORS_ALLOWED_ORIGINS")
 
 ROOT_URLCONF = "auth_service.urls"
 
