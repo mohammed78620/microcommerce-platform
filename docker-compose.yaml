@@ -3,6 +3,21 @@
 
 services:
 
+    nginx:
+        image: nginx:alpine
+        ports:
+            - "80:80"
+        volumes:
+            - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+        depends_on:
+            - auth-service
+            - orders
+            - products
+            - emails
+        restart: always
+        networks:
+            - microservices-network
+
     emails:
         build: ./services/emails
         command: bash -c "uv run python3 manage.py runserver 0.0.0.0:8001"
