@@ -18,6 +18,8 @@ import stripe
 
 environment = environ.FileAwareEnv(
     DEBUG=(bool, True),
+    ALLOWED_HOSTS=(list, ["localhost", "127.0.0.1"]),
+    CORS_ALLOWED_ORIGINS=(list, ["http://localhost:3000"]),
     STRIPE_SECRET_KEY=(str, None),
     STRIPE_PUBLISHABLE_KEY=(str, None),
     STRIPE_WEBHOOK_SECRET=(str, None),
@@ -41,7 +43,8 @@ SECRET_KEY = "f!&nc$=8(u)m+x@h7m4*b*#swbf((jh@1+)!t+ut-97n0ytv3y"
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = environment("DEBUG")
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = environment("ALLOWED_HOSTS")
+CORS_ALLOWED_ORIGINS = environment("CORS_ALLOWED_ORIGINS")
 
 
 # Application definition
