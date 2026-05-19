@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/3.1/ref/settings/
 
 from pathlib import Path
 from datetime import timedelta
+import environ
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -24,9 +25,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "f!&nc$=8(u)m+x@h7m4*b*#swbf((jh@1+)!t+ut-97n0ytv3y"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+environment = environ.FileAwareEnv(
+    DEBUG=(bool, True),
+    ALLOWED_HOSTS=(list, ["localhost", "127.0.0.1"]),
+)
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "auth-service"]
+ALLOWED_HOSTS = environment("ALLOWED_HOSTS")
 
 
 # Application definition
