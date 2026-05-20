@@ -18,7 +18,8 @@ import stripe
 
 environment = environ.FileAwareEnv(
     DEBUG=(bool, True),
-    ALLOWED_HOSTS=(list, ["localhost", "127.0.0.1"]),
+    ALLOWED_HOSTS=(list, ["localhost", "127.0.0.1", "orders"]),
+    SECRET_KEY=(str, None),
     CORS_ALLOWED_ORIGINS=(list, ["http://localhost:3000"]),
     STRIPE_SECRET_KEY=(str, None),
     STRIPE_PUBLISHABLE_KEY=(str, None),
@@ -37,14 +38,13 @@ environ.Env.read_env(BASE_DIR / ".env")
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "f!&nc$=8(u)m+x@h7m4*b*#swbf((jh@1+)!t+ut-97n0ytv3y"
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = environment("DEBUG")
 
 ALLOWED_HOSTS = environment("ALLOWED_HOSTS")
 CORS_ALLOWED_ORIGINS = environment("CORS_ALLOWED_ORIGINS")
+SECRET_KEY = environment("SECRET_KEY")
 
 
 # Application definition
