@@ -24,9 +24,11 @@ jobs:
         uses: hashicorp/setup-terraform@v2
 
       - name: Terraform Init
+        working-directory: infra
         run: terraform init
 
       - name: Create tfvars
+        working-directory: infra
         run: |
           cat > terraform.tfvars <<EOF
           rabbitmq_user      = "${{ secrets.RABBITMQ_USER }}"
@@ -35,6 +37,7 @@ jobs:
           EOF
 
       - name: Terraform Apply
+        working-directory: infra
         run: terraform apply -auto-approve
 
       - name: Build and deploy frontend
