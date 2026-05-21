@@ -40,12 +40,27 @@ jobs:
         working-directory: infra
         run: terraform apply -auto-approve
 
+      - name: Get Terraform outputs
+        working-directory: infra
+        run: |
+          echo "CLOUDFRONT_DOMAIN=$(terraform output -raw cloudfront_domain)" >> $GITHUB_ENV
+
+      - name: Create frontend .env
+        run: |
+          cat > frontend/.env <<EOF
+          REACT_APP_AUTH_URL=https://${CLOUDFRONT_DOMAIN}/api/auth
+          REACT_APP_ORDERS_URL=https://${CLOUDFRONT_DOMAIN}/api/orders
+          REACT_APP_PRODUCTS_URL=https://${CLOUDFRONT_DOMAIN}/api/products
+          EOF
+
       - name: Build and deploy frontend
         run: |
           cd frontend
           npm install
           npm run build
-          BUCKET=$(terraform output -raw frontend_bucket)
-          DIST_ID=$(terraform output -raw cloudfront_id)
+
+          BUCKET=$(terraform -chdir=../infra output -raw frontend_bucket)
+          DIST_ID=$(terraform -chdir=../infra output -raw cloudfront_id)
+
           aws s3 sync build/ s3://$BUCKET --delete
           aws cloudfront create-invalidation --distribution-id $DIST_ID --paths "/*"
