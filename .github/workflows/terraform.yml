@@ -27,6 +27,15 @@ jobs:
         working-directory: infra
         run: terraform init
 
+      - name: Create tfvars
+        working-directory: infra
+        run: |
+          cat > terraform.tfvars <<EOF
+          rabbitmq_user      = "${{ secrets.RABBITMQ_USER }}"
+          rabbitmq_password  = "${{ secrets.RABBITMQ_PASSWORD }}"
+          django_secret_key  = "${{ secrets.DJANGO_SECRET_KEY }}"
+          EOF
+
       - name: Terraform Apply or Destroy
         working-directory: infra
         run: |
