@@ -27,6 +27,8 @@ services:
         volumes:
             - ./services/emails:/app
             - /app/.venv
+        environment:
+            - SECRET_KEY=${SECRET_KEY}
         ports:
             - 8001:8001
         restart: always
@@ -39,6 +41,9 @@ services:
     emails-consumer:
         build: ./services/emails
         command: uv run python3 manage.py start_consumer
+                
+        environment:
+            - SECRET_KEY=${SECRET_KEY}
         depends_on:
             - rabbitmq
             - products-db
@@ -55,6 +60,8 @@ services:
         volumes:
             - ./services/products:/app
             - /app/.venv
+        environment:
+            - SECRET_KEY=${SECRET_KEY}
         ports:
             - 8002:8002
         restart: always
@@ -70,6 +77,8 @@ services:
         depends_on:
             - rabbitmq
             - products-db
+        environment:
+            - SECRET_KEY=${SECRET_KEY}
         restart: always
         networks:
             - microservices-network
@@ -80,6 +89,8 @@ services:
         volumes:
             - ./services/orders:/app
             - /app/.venv
+        environment:
+            - SECRET_KEY=${SECRET_KEY}
         ports:
             - 8003:8003
             - 5678:5678
@@ -100,6 +111,8 @@ services:
         volumes:
             - ./services/auth_service:/app
             - /app/.venv
+        environment:
+            - SECRET_KEY=${SECRET_KEY}
         ports:
             - 8004:8004
         restart: always

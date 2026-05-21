@@ -16,11 +16,14 @@ import environ
 
 environment = environ.FileAwareEnv(
     DEBUG=(bool, True),
+    SECRET_KEY=(str, None),
+    ALLOWED_HOSTS=(list, ["localhost", "127.0.0.1", "emails"]),
     EMAIL_HOST_PASSWORD=(str, None),
     EMAIL_HOST_USER=(str, None),
     DEFAULT_FROM_EMAIL=(str, None),
     PRODUCTS_SERVICE_URL=(str, "http://products:8002/"),
     AUTH_SERVICE_URL=(str, "http://auth-service:8004/"),
+    CORS_ALLOWED_ORIGINS=(list, ["http://localhost:3000"]),
 )
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -31,8 +34,9 @@ environ.Env.read_env(BASE_DIR / ".env")
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "f!&nc$=8(u)m+x@h7m4*b*#swbf((jh@1+)!t+ut-97n0ytv3y"
+SECRET_KEY = environment("SECRET_KEY")
+ALLOWED_HOSTS = environment("ALLOWED_HOSTS")
+CORS_ALLOWED_ORIGINS = environment("CORS_ALLOWED_ORIGINS")
 
 DEBUG = environment("DEBUG")
 

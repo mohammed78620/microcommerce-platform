@@ -17,7 +17,16 @@ def release_stock(ch, method, properties, body):
 
 
 def main():
-    connection = pika.BlockingConnection(pika.ConnectionParameters(host="rabbitmq"))
+    credentials = pika.PlainCredentials(
+        username=os.environ.get("RABBITMQ_USER", "guest"),
+        password=os.environ.get("RABBITMQ_PASSWORD", "guest"),
+    )
+    connection = pika.BlockingConnection(
+        pika.ConnectionParameters(
+            host=os.environ.get("RABBITMQ_HOST", "rabbitmq"),
+            credentials=credentials,
+        )
+    )
     channel = connection.channel()
 
     channel.queue_declare(queue="release-stock", durable=True, arguments={"x-queue-type": "quorum"})
