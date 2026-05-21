@@ -23,6 +23,8 @@ jobs:
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_wrapper: false
 
       - name: Terraform Init
         working-directory: infra
@@ -39,12 +41,18 @@ jobs:
 
       - name: Terraform Apply
         working-directory: infra
-        run: terraform apply -auto-approve
+        run: terraform apply -auto-approve -input=false
 
       - name: Get Terraform outputs
         working-directory: infra
         run: |
-          echo "CLOUDFRONT_DOMAIN=$(terraform output -raw cloudfront_domain)" >> $GITHUB_ENV
+          CLOUDFRONT_DOMAIN=$(terraform output -raw cloudfront_domain)
+          FRONTEND_BUCKET=$(terraform output -raw frontend_bucket)
+          CLOUDFRONT_ID=$(terraform output -raw cloudfront_id)
+
+          echo "CLOUDFRONT_DOMAIN=$CLOUDFRONT_DOMAIN" >> $GITHUB_ENV
+          echo "FRONTEND_BUCKET=$FRONTEND_BUCKET" >> $GITHUB_ENV
+          echo "CLOUDFRONT_ID=$CLOUDFRONT_ID" >> $GITHUB_ENV
 
       - name: Create frontend .env
         run: |
@@ -52,7 +60,7 @@ jobs:
           REACT_APP_AUTH_URL=https://${CLOUDFRONT_DOMAIN}/api/auth
           REACT_APP_ORDERS_URL=https://${CLOUDFRONT_DOMAIN}/api/orders
           REACT_APP_PRODUCTS_URL=https://${CLOUDFRONT_DOMAIN}/api/products
-          REACT_APP_STRIPE_PUBLISHABLE_KEY="${{ secrets.REACT_APP_STRIPE_PUBLISHABLE_KEY }}"
+          REACT_APP_STRIPE_PUBLISHABLE_KEY=${{ secrets.REACT_APP_STRIPE_PUBLISHABLE_KEY }}
           EOF
 
       - name: Build and deploy frontend
@@ -61,8 +69,8 @@ jobs:
           npm install
           npm run build
 
-          BUCKET=$(terraform -chdir=../infra output -raw frontend_bucket)
-          DIST_ID=$(terraform -chdir=../infra output -raw cloudfront_id)
+          aws s3 sync build/ s3://$FRONTEND_BUCKET --delete
 
-          aws s3 sync build/ s3://$BUCKET --delete
-          aws cloudfront create-invalidation --distribution-id $DIST_ID --paths "/*"
+          aws cloudfront create-invalidation \
+            --distribution-id $CLOUDFRONT_ID \
+            --paths "/*"
