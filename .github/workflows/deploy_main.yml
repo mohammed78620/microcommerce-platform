@@ -52,6 +52,7 @@ jobs:
           REACT_APP_AUTH_URL=https://${CLOUDFRONT_DOMAIN}/api/auth
           REACT_APP_ORDERS_URL=https://${CLOUDFRONT_DOMAIN}/api/orders
           REACT_APP_PRODUCTS_URL=https://${CLOUDFRONT_DOMAIN}/api/products
+          REACT_APP_STRIPE_PUBLISHABLE_KEY="${{ secrets.REACT_APP_STRIPE_PUBLISHABLE_KEY }}"
           EOF
 
       - name: Build and deploy frontend
