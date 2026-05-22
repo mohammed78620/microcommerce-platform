@@ -55,7 +55,6 @@ services:
 
     products:
         build: ./services/products
-        # command: bash -c "uv run python3 manage.py runserver 0.0.0.0:8002"
         command: >
             sh -c "uv run python3 manage.py seed_products &&
                 uv run python3 manage.py runserver 0.0.0.0:8002"
