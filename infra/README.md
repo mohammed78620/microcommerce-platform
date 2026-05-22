@@ -19,7 +19,7 @@ This directory contains minimal Terraform configuration to deploy the repository
 
 ```bash
 cd infra
-terraform init
+terraform init -reconfigure
 terraform apply
 ```
 
@@ -28,3 +28,4 @@ terraform apply
 - The EC2 instance uses Docker Compose to start containers from `docker-compose.yaml`.
 - If the repository URL is not set, Terraform will still create infrastructure, but the application will not be cloned or started automatically.
 - You can connect with SSM Session Manager even when no SSH key is provided.
+
