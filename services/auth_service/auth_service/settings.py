@@ -26,7 +26,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 environment = environ.FileAwareEnv(
     DEBUG=(bool, True),
     SECRET_KEY=(str, None),
-    ALLOWED_HOSTS=(list, ["localhost", "127.0.0.1"]),
+    ALLOWED_HOSTS=(list, ["auth-service", "localhost", "127.0.0.1"]),
     CORS_ALLOWED_ORIGINS=(list, ["http://localhost:3000"]),
 )
 

@@ -77,7 +77,6 @@ NGINX sits in front of all services and handles:
 - Rate limiting
 - Request/response logging
 
-Each microservice exposes a `/health/` endpoint used by NGINX and the load balancer for upstream health checks.
 
 ## Infrastructure (Terraform)
 
@@ -86,7 +85,6 @@ The `infra/` directory contains Terraform configuration to deploy the full stack
 - **VPC** with public and private subnets across two availability zones
 - **EC2 instances** — one per microservice (private subnets) + one for the frontend (public subnet)
 - **Application Load Balancer** with path-based listener rules
-- **RDS PostgreSQL 15** in private subnets with encryption at rest
 - **NAT Gateway** allowing private instances to reach the internet for updates
 
 ```bash
@@ -109,12 +107,17 @@ docker-compose -f docker-compose.dev.yaml up
 
 | URL | Service |
 |---|---|
-| [http://localhost:80](http://localhost:80) | React frontend |
+| [http://localhost:3000](http://localhost:3000) | React frontend |
 | [http://localhost:15672](http://localhost:15672) | RabbitMQ Management UI (`guest` / `guest`) |
-| [http://localhost:8000](http://localhost:8000) | auth_service (direct) |
+| [http://localhost:8000](http://localhost:8004) | auth_service (direct) |
 | [http://localhost:8001](http://localhost:8001) | emails (direct) |
-| [http://localhost:8002](http://localhost:8002) | orders (direct) |
-| [http://localhost:8003](http://localhost:8003) | products (direct) |
+| [http://localhost:8002](http://localhost:8003) | orders (direct) |
+| [http://localhost:8003](http://localhost:8002) | products (direct) |
+
+To test stripe integration start the stripe listener
+```
+stripe listen --forward-to localhost:8003/api/webhook/
+```
 
 ## Testing CI Locally
 
@@ -134,7 +137,7 @@ act -l
 act push
 
 # Run a specific job
-act -j test
+act -j unittest
 
 # Run with secrets
 act push --secret-file .secrets
@@ -148,11 +151,13 @@ Each service reads its configuration from environment variables. Copy `.env.exam
 
 | Variable | Description |
 |---|---|
-| `DJANGO_SECRET_KEY` | Django secret key |
+| `SECRET_KEY` | Django secret key |
 | `DATABASE_URL` | Postgres connection string |
 | `RABBITMQ_URL` | RabbitMQ connection string |
 | `DJANGO_DEBUG` | `True` for local dev, `False` in production |
 | `DJANGO_ALLOWED_HOSTS` | Comma-separated list of allowed hosts |
+
+Make sure the SECRET_KEY is the same between all services
 
 ## License
 
