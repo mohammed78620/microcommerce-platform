@@ -9,23 +9,28 @@ export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchLoading, setSearchLoading] = useState(false);
   const [activeSearch, setActiveSearch] = useState('');
+  const [pageNumber, setPageNumber] = useState(1);
+  const [hasNext, setHasNext] = useState(false);
+  const [hasPrev, setHasPrev] = useState(false);
+
+  const PAGE_SIZE = 10;
 
   useEffect(() => {
-    fetchProducts('');
-  }, []);
+    fetchProducts('', pageNumber);
+  }, [pageNumber]);
 
-  const fetchProducts = async (query = '') => {
+  const fetchProducts = async (query = '', page = 1) => {
     try {
       query ? setSearchLoading(true) : setLoading(true);
 
       let url, method, body;
 
       if (query.trim()) {
-        url = `${process.env.REACT_APP_PRODUCTS_URL}/api/products/search/`;
+        url = `${process.env.REACT_APP_PRODUCTS_URL}/api/products/search/?page_number=${page}`;
         method = 'POST';
         body = JSON.stringify({ search: query.trim() });
       } else {
-        url = `${process.env.REACT_APP_PRODUCTS_URL}/api/products/?limit=10`;
+        url = `${process.env.REACT_APP_PRODUCTS_URL}/api/products/?limit=${PAGE_SIZE}&page_number=${page}`;
         method = 'GET';
       }
 
@@ -41,7 +46,21 @@ export default function ProductsPage() {
       if (!response.ok) throw new Error('Failed to fetch products');
 
       const data = await response.json();
-      setProducts(data);
+
+      console.log('[ProductsPage] API response:', data);
+
+      // Handle paginated response shape: { count, next, previous, results }
+      if (data.results !== undefined) {
+        setProducts(data.results);
+        setHasNext(!!data.next);
+        setHasPrev(!!data.previous);
+      } else {
+        // Fallback: flat array — no pagination info available
+        setProducts(data);
+        setHasNext(false);
+        setHasPrev(false);
+      }
+
       setError(null);
     } catch (err) {
       setError(err.message);
@@ -53,7 +72,8 @@ export default function ProductsPage() {
 
   const handleSearch = () => {
     setActiveSearch(searchQuery);
-    fetchProducts(searchQuery);
+    setPageNumber(1);
+    fetchProducts(searchQuery, 1);
   };
 
   const handleKeyDown = (e) => {
@@ -63,7 +83,15 @@ export default function ProductsPage() {
   const handleClearSearch = () => {
     setSearchQuery('');
     setActiveSearch('');
-    fetchProducts('');
+    setPageNumber(1);
+    fetchProducts('', 1);
+  };
+
+  const handlePageChange = (newPage) => {
+    setPageNumber(newPage);
+    if (activeSearch) {
+      fetchProducts(activeSearch, newPage);
+    }
   };
 
   const handleAddToCart = async (productId) => {
@@ -138,32 +166,52 @@ export default function ProductsPage() {
           {activeSearch ? `No products found for "${activeSearch}"` : 'No products available'}
         </p>
       ) : (
-        <div className="products-grid">
-          {products.map((product) => (
-            <div key={product.id} className="product-card">
-              <div className="product-image">
-                {product.image ? (
-                  <img src={product.image} alt={product.name} />
-                ) : (
-                  <div className="placeholder">No Image</div>
-                )}
-              </div>
-              <div className="product-details">
-                <h2>{product.name}</h2>
-                <p className="product-description">{product.description}</p>
-                <div className="product-footer">
-                  <span className="product-price">£{product.price}</span>
-                  <button
-                    onClick={() => handleAddToCart(product.id)}
-                    className="add-to-cart-btn"
-                  >
-                    Add to Cart
-                  </button>
+        <>
+          <div className="products-grid">
+            {products.map((product) => (
+              <div key={product.id} className="product-card">
+                <div className="product-image">
+                  {product.image ? (
+                    <img src={product.image} alt={product.name} />
+                  ) : (
+                    <div className="placeholder">No Image</div>
+                  )}
+                </div>
+                <div className="product-details">
+                  <h2>{product.name}</h2>
+                  <p className="product-description">{product.description}</p>
+                  <div className="product-footer">
+                    <span className="product-price">£{product.price}</span>
+                    <button
+                      onClick={() => handleAddToCart(product.id)}
+                      className="add-to-cart-btn"
+                    >
+                      Add to Cart
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+
+          <div className="pagination">
+            <button
+              className="pagination-btn"
+              onClick={() => handlePageChange(pageNumber - 1)}
+              disabled={!hasPrev}
+            >
+              ← Prev
+            </button>
+            <span className="pagination-info">Page {pageNumber}</span>
+            <button
+              className="pagination-btn"
+              onClick={() => handlePageChange(pageNumber + 1)}
+              disabled={!hasNext}
+            >
+              Next →
+            </button>
+          </div>
+        </>
       )}
     </div>
   );

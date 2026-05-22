@@ -8,6 +8,7 @@ from django.db import transaction
 from rest_framework.exceptions import APIException
 from rest_framework.request import Request
 from django.contrib.postgres.search import SearchVector
+from django.core.paginator import Paginator
 
 from .models import Product
 from .serializers import ProductSerializer
@@ -21,18 +22,26 @@ class InsufficientStockError(APIException):
 
 class ProductViewSet(viewsets.ViewSet):
     def list(self, request):
-        limit = request.query_params.get("limit")
-
+        page_size = request.query_params.get("limit")
+        page_number = request.query_params.get("page_number")
         products = Product.objects.all()
+        paginator = Paginator(
+            object_list=products,
+            per_page=page_size,
+        )
+        page_obj = paginator.get_page(page_number)
+        serializer = ProductSerializer(page_obj, many=True)
 
-        if limit:
-            try:
-                products = products[: int(limit)]
-            except ValueError:
-                return Response({"error": "limit must be an integer"}, status=status.HTTP_400_BAD_REQUEST)
-
-        serializer = ProductSerializer(products, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(
+            {
+                "count": paginator.count,
+                "total_pages": paginator.num_pages,
+                "next": page_obj.has_next(),
+                "previous": page_obj.has_previous(),
+                "results": serializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )
 
     def create(self, request):
         serializer = ProductSerializer(data=request.data)
