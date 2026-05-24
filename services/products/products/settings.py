@@ -27,6 +27,7 @@ environment = environ.FileAwareEnv(
     SECRET_KEY=(str, None),
     ALLOWED_HOSTS=(list, ["localhost", "127.0.0.1", "products"]),
     CORS_ALLOWED_ORIGINS=(list, ["http://localhost:3000"]),
+    REDIS_URL=(str, "redis://redis:6379/1"),
 )
 
 ALLOWED_HOSTS = environment("ALLOWED_HOSTS")
@@ -96,6 +97,14 @@ DATABASES = {
         "PASSWORD": config["DATABASE"]["PASSWORD"],
         "HOST": config["DATABASE"]["HOST"],
         "PORT": config["DATABASE"]["PORT"],
+    }
+}
+
+# Cache
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": environment("REDIS_URL"),
     }
 }
 
