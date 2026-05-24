@@ -40,4 +40,7 @@ aws cloudfront create-invalidation --distribution-id $(terraform -chdir="../infr
 - The EC2 instance uses Docker Compose to start containers from `docker-compose.yaml`.
 - If the repository URL is not set, Terraform will still create infrastructure, but the application will not be cloned or started automatically.
 - You can connect with SSM Session Manager even when no SSH key is provided.
-
+- to access backend machine run
+```bash
+aws ssm start-session --target $(aws ec2 describe-instances --filters "Name=tag:Name,Values=microcommerce-app-host" --query "Reservations[0].Instances[0].InstanceId" --output text) --document-name AWS-StartInteractiveCommand --parameters command="sudo su -"
+```

@@ -49,7 +49,7 @@ class ProductViewSet(viewsets.ViewSet):
         cache.set(
             cache_key,
             response_data,
-            timeout=10,
+            timeout=60 * 10,
         )
 
         return Response(

@@ -115,7 +115,7 @@ output "app_public_dns" {
 
 resource "aws_instance" "app" {
   ami                         = data.aws_ami.amazon_linux.id
-  instance_type               = var.instance_type
+  instance_type               =  "t3.small"
   subnet_id                   = data.aws_subnets.default.ids[0]
   associate_public_ip_address = true
   vpc_security_group_ids      = [aws_security_group.host.id]
