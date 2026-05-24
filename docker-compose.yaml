@@ -73,6 +73,7 @@ services:
             - RABBITMQ_USER=${RABBITMQ_USER}
             - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
             - ALLOWED_HOSTS=${ALLOWED_HOSTS}
+            - REDIS_URL=${REDIS_URL}
             - SECRET_KEY=${SECRET_KEY}
         networks:
             - microservices-network
@@ -87,6 +88,7 @@ services:
             - RABBITMQ_USER=${RABBITMQ_USER}
             - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
             - ALLOWED_HOSTS=${ALLOWED_HOSTS}
+            - REDIS_URL=${REDIS_URL}
             - SECRET_KEY=${SECRET_KEY}
         restart: always
         networks:

@@ -3,7 +3,6 @@
 
 services:
 
-
     frontend:
         build: ./frontend
         container_name: react_app
@@ -183,6 +182,13 @@ services:
         ports:
             - "15672:15672"
             - "5672:5672"
+        networks:
+            - microservices-network
+    
+    redis:
+        image: redislabs/redismod
+        ports:
+        - '6379:6379'
         networks:
             - microservices-network
 
