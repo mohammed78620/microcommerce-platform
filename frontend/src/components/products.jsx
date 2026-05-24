@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './products.css';
 
 export default function ProductsPage() {
@@ -14,10 +14,15 @@ export default function ProductsPage() {
   const [hasPrev, setHasPrev] = useState(false);
 
   const PAGE_SIZE = 10;
+  const activeSearchRef = useRef('');
 
   useEffect(() => {
-    fetchProducts('', pageNumber);
-  }, [pageNumber]);
+    activeSearchRef.current = activeSearch;
+  }, [activeSearch]);
+
+  useEffect(() => {
+    fetchProducts(activeSearch, pageNumber);
+  }, [activeSearch, pageNumber]);
 
   const fetchProducts = async (query = '', page = 1) => {
     try {
@@ -26,7 +31,7 @@ export default function ProductsPage() {
       let url, method, body;
 
       if (query.trim()) {
-        url = `${process.env.REACT_APP_PRODUCTS_URL}/api/products/search/?page_number=${page}`;
+        url = `${process.env.REACT_APP_PRODUCTS_URL}/api/products/search/?page_number=${page}&limit=${PAGE_SIZE}`;
         method = 'POST';
         body = JSON.stringify({ search: query.trim() });
       } else {
@@ -49,13 +54,11 @@ export default function ProductsPage() {
 
       console.log('[ProductsPage] API response:', data);
 
-      // Handle paginated response shape: { count, next, previous, results }
       if (data.results !== undefined) {
         setProducts(data.results);
         setHasNext(!!data.next);
         setHasPrev(!!data.previous);
       } else {
-        // Fallback: flat array — no pagination info available
         setProducts(data);
         setHasNext(false);
         setHasPrev(false);
@@ -71,9 +74,13 @@ export default function ProductsPage() {
   };
 
   const handleSearch = () => {
-    setActiveSearch(searchQuery);
+    const trimmed = searchQuery.trim();
+    setActiveSearch(trimmed);
     setPageNumber(1);
-    fetchProducts(searchQuery, 1);
+    // If both values are already the same the effect won't fire — call directly
+    if (trimmed === activeSearchRef.current && pageNumber === 1) {
+      fetchProducts(trimmed, 1);
+    }
   };
 
   const handleKeyDown = (e) => {
@@ -84,14 +91,12 @@ export default function ProductsPage() {
     setSearchQuery('');
     setActiveSearch('');
     setPageNumber(1);
-    fetchProducts('', 1);
   };
 
   const handlePageChange = (newPage) => {
+    // Read latest activeSearch from ref so we never have a stale closure
+    fetchProducts(activeSearchRef.current, newPage);
     setPageNumber(newPage);
-    if (activeSearch) {
-      fetchProducts(activeSearch, newPage);
-    }
   };
 
   const handleAddToCart = async (productId) => {

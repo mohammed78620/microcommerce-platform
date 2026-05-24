@@ -22,7 +22,19 @@ cd infra
 terraform init -reconfigure
 terraform apply
 ```
-
+4. update .env URL's  in react app with cloudfront_domain
+```bash
+terraform output --raw cloudfront_domain
+```
+5. build react app and publish to s3
+```bash
+cd ..\frontend
+aws s3 sync build/ s3://"$(terraform -chdir="../infra" output --raw frontend_bucket)" --delete
+```
+6. Invalidate cache
+```bash
+aws cloudfront create-invalidation --distribution-id $(terraform -chdir="../infra" output --raw cloudfront_id) --paths "/*"
+```
 ## Notes
 
 - The EC2 instance uses Docker Compose to start containers from `docker-compose.yaml`.

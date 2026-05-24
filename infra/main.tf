@@ -122,7 +122,7 @@ resource "aws_instance" "app" {
   iam_instance_profile        = aws_iam_instance_profile.ec2.name
   key_name                    = local.use_key_pair ? aws_key_pair.deploy[0].key_name : null
 
-  depends_on = [aws_instance.rabbitmq]
+  depends_on = [aws_instance.rabbitmq, aws_elasticache_cluster.redis]
 
   user_data = <<-EOF
                 #!/bin/bash
@@ -158,6 +158,7 @@ RABBITMQ_USER=${var.rabbitmq_user}
 RABBITMQ_PASSWORD=${var.rabbitmq_password}
 ALLOWED_HOSTS=localhost,127.0.0.1,auth-service,orders,products,emails,*.cloudfront.net
 SECRET_KEY=${var.django_secret_key}
+REDIS_URL=redis://${aws_elasticache_cluster.redis.cache_nodes[0].address}:6379/0
 ENVFILE
 
                   cd /home/ec2-user/app
