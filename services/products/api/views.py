@@ -9,6 +9,7 @@ from rest_framework.exceptions import APIException
 from rest_framework.request import Request
 from django.contrib.postgres.search import SearchVector
 from django.core.paginator import Paginator
+from common.utils import CachedPaginator
 from django.core.cache import cache
 
 from .models import Product
@@ -22,22 +23,16 @@ class InsufficientStockError(APIException):
 
 
 class ProductViewSet(viewsets.ViewSet):
+    paginator_class = CachedPaginator
+
     def list(self, request):
-        page_size = request.query_params.get("limit")
-        page_number = request.query_params.get("page_number")
-        cache_key = f"products_per_page_{page_number}"
-        cached = cache.get(cache_key)
+        page_size = int(request.query_params.get("limit"))
+        page_number = int(request.query_params.get("page_number"))
+        cache_key = f"products_per_page"
 
-        if cached:
-            print(cached)
-            return Response(cached, status=status.HTTP_200_OK)
-
-        products = Product.objects.all()
-        paginator = Paginator(
-            object_list=products,
-            per_page=page_size,
-        )
-        page_obj = paginator.get_page(page_number)
+        products = Product.objects.all().order_by("-created_at")
+        paginator = self.paginator_class(object_list=products, per_page=page_size, cache_key=cache_key)
+        page_obj = paginator.page(page_number)
         serializer = ProductSerializer(page_obj, many=True)
         response_data = {
             "count": paginator.count,
@@ -46,12 +41,6 @@ class ProductViewSet(viewsets.ViewSet):
             "previous": page_obj.has_previous(),
             "results": list(serializer.data),
         }
-        cache.set(
-            cache_key,
-            response_data,
-            timeout=60 * 10,
-        )
-
         return Response(
             response_data,
             status=status.HTTP_200_OK,
@@ -92,17 +81,18 @@ class ProductViewSet(viewsets.ViewSet):
         page_number = request.query_params.get("page_number")
         body = json.loads(request.body)
         search_query = body.get("search")
+        cache_key = f"product_search_{search_query}"
         products = (
             Product.objects.annotate(search=SearchVector("name", "description"))
             .filter(search=search_query)
-            .order_by("name")
+            .order_by("-created_at")
         )
 
         if not search_query or search_query is None:
             return Response({"error": "No search query"}, status=status.HTTP_400_BAD_REQUEST)
 
-        paginator = Paginator(products, page_size)
-        page_obj = paginator.get_page(page_number)
+        paginator = self.paginator_class(object_list=products, per_page=page_size, cache_key=cache_key)
+        page_obj = paginator.page(page_number)
 
         serializer = ProductSerializer(page_obj, many=True)
         return Response(
