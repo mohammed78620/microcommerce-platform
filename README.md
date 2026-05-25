@@ -119,6 +119,11 @@ To test stripe integration start the stripe listener
 stripe listen --forward-to localhost:8003/api/webhook/
 ```
 
+To connect to redis run in powershell
+```
+docker exec -it $(docker ps -q --filter "name=redis") redis-cli -n 1
+```
+
 ## Testing CI Locally
 
 To run GitHub Actions workflows locally without pushing to GitHub, use [**act**](https://github.com/nektos/act):
