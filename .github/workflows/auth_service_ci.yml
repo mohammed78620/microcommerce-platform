@@ -61,6 +61,6 @@ jobs:
           DATABASE_HOST: "localhost"
           DATABASE_PORT: "5432"
           DATABASE_NAME: auth-service-db
-          SECRET_KEY: q6!+*$53=yt=$zm6l)kry=se#m**b@19s@@*pc3qy32bdq#@fz # not using this key in prod 
+          SECRET_KEY: "${{secrets.AUTH_SERVICE_CI_SECRET_KEY}}""
         run: |
           uv run python manage.py test api.tests
