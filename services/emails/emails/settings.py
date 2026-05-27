@@ -17,7 +17,7 @@ import environ
 environment = environ.FileAwareEnv(
     DEBUG=(bool, True),
     SECRET_KEY=(str, None),
-    ALLOWED_HOSTS=(list, ["localhost", "127.0.0.1", "emails"]),
+    ALLOWED_HOSTS=(list, ["localhost", "127.0.0.1", "0.0.0.0", "emails"]),
     EMAIL_HOST_PASSWORD=(str, None),
     EMAIL_HOST_USER=(str, None),
     DEFAULT_FROM_EMAIL=(str, None),
@@ -38,9 +38,6 @@ ALLOWED_HOSTS = environment("ALLOWED_HOSTS")
 CORS_ALLOWED_ORIGINS = environment("CORS_ALLOWED_ORIGINS")
 
 DEBUG = environment("DEBUG")
-
-
-ALLOWED_HOSTS = []
 
 
 # Application definition

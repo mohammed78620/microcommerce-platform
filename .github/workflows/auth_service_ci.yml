@@ -11,7 +11,7 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
 
-  orders-tests:
+  auth-service-tests:
       runs-on: ubuntu-latest
 
       services:
@@ -31,7 +31,7 @@ jobs:
 
       defaults:
         run:
-          working-directory: services/orders
+          working-directory: services/auth_service
 
       steps:
       - name: Checkout code
@@ -60,6 +60,6 @@ jobs:
           DATABASE_PASSWORD: root
           DATABASE_HOST: "localhost"
           DATABASE_PORT: "5432"
-          DATABASE_NAME: order-db
+          DATABASE_NAME: auth-service-db
         run: |
-          uv run python manage.py test --buffer
+          uv run python manage.py test api.tests
