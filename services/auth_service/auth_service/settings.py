@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/3.1/ref/settings/
 from pathlib import Path
 from datetime import timedelta
 import environ
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -27,7 +28,9 @@ environment = environ.FileAwareEnv(
     DEBUG=(bool, True),
     SECRET_KEY=(str, None),
     ALLOWED_HOSTS=(list, ["auth-service", "localhost", "127.0.0.1"]),
+    EMAILS_SERVICE_URL=(str, "http://emails:8001/"),
     CORS_ALLOWED_ORIGINS=(list, ["http://localhost:3000"]),
+    EMAIL_VERIFICATION_SALT=(str, "email-verification"),
 )
 
 ALLOWED_HOSTS = environment("ALLOWED_HOSTS")
@@ -90,11 +93,11 @@ config.read("config.ini")
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": config["DATABASE"]["NAME"],
-        "USER": config["DATABASE"]["USER"],
-        "PASSWORD": config["DATABASE"]["PASSWORD"],
-        "HOST": config["DATABASE"]["HOST"],
-        "PORT": config["DATABASE"]["PORT"],
+        "NAME": os.environ.get("DATABASE_NAME", config["DATABASE"]["NAME"]),
+        "USER": os.environ.get("DATABASE_USER", config["DATABASE"]["USER"]),
+        "PASSWORD": os.environ.get("DATABASE_PASSWORD", config["DATABASE"]["PASSWORD"]),
+        "HOST": os.environ.get("DATABASE_HOST", config["DATABASE"]["HOST"]),
+        "PORT": os.environ.get("DATABASE_PORT", config["DATABASE"]["PORT"]),
     }
 }
 
@@ -155,3 +158,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 CORS_ORIGIN_ALLOW_ALL = True
+
+EMAILS_SERVICE_URL = environment("EMAILS_SERVICE_URL")
+
+EMAIL_VERIFICATION_SALT = environment("EMAIL_VERIFICATION_SALT")
