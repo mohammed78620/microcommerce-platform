@@ -1,11 +1,13 @@
 # This is a basic workflow to help you get started with Actions 
 
 name: Main CI
- 
-# Controls when the workflow will run
+
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, edited]
+  push:
+    branches-ignore:
+      - main
 
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
