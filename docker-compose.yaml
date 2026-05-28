@@ -34,6 +34,7 @@ services:
             - ALLOWED_HOSTS=${ALLOWED_HOSTS}
             - SECRET_KEY=${SECRET_KEY}
             - DATABASE_HOST=${EMAILS_HOST}
+            - DATABASE_NAME=${EMAILS_DATABASE_NAME}
             - DATABASE_PASSWORD=${DATABASE_PASSWORD}
         networks:
             - microservices-network
@@ -48,6 +49,7 @@ services:
             - ALLOWED_HOSTS=${ALLOWED_HOSTS}
             - SECRET_KEY=${SECRET_KEY}
             - DATABASE_HOST=${EMAILS_HOST}
+            - DATABASE_NAME=${EMAILS_DATABASE_NAME}
             - DATABASE_PASSWORD=${DATABASE_PASSWORD}
         restart: always
         networks:
@@ -73,6 +75,7 @@ services:
             - REDIS_URL=${REDIS_URL}
             - SECRET_KEY=${SECRET_KEY}
             - DATABASE_HOST=${PRODUCTS_HOST}
+            - DATABASE_NAME=${PRODUCTS_DATABASE_NAME}
             - DATABASE_PASSWORD=${DATABASE_PASSWORD}
         networks:
             - microservices-network
@@ -88,6 +91,7 @@ services:
             - REDIS_URL=${REDIS_URL}
             - SECRET_KEY=${SECRET_KEY}
             - DATABASE_HOST=${PRODUCTS_HOST}
+            - DATABASE_NAME=${EMAILS_DATABASE_NAME}
             - DATABASE_PASSWORD=${DATABASE_PASSWORD}
         restart: always
         networks:
@@ -110,6 +114,7 @@ services:
             - ALLOWED_HOSTS=${ALLOWED_HOSTS}
             - SECRET_KEY=${SECRET_KEY}
             - DATABASE_HOST=${ORDERS_HOST}
+            - DATABASE_NAME=${ORDERS_DATABASE_NAME}
             - DATABASE_PASSWORD=${DATABASE_PASSWORD}
         networks:
             - microservices-network
@@ -134,6 +139,7 @@ services:
             - ALLOWED_HOSTS=${ALLOWED_HOSTS}
             - SECRET_KEY=${SECRET_KEY}
             - DATABASE_HOST=${AUTH_SERVICE_HOST}
+            - DATABASE_NAME=${AUTH_SERVICE_DATABASE_NAME}
             - DATABASE_PASSWORD=${DATABASE_PASSWORD}
         networks:
             - microservices-network
