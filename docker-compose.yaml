@@ -139,61 +139,61 @@ services:
         networks:
             - microservices-network
 
-    emails-db:
-        image: postgres:14.2-alpine
-        restart: unless-stopped
-        volumes:
-            - .postgres_data/emails_data:/var/lib/postgres
-        environment:
-            - POSTGRES_USER=admin
-            - POSTGRES_PASSWORD=root
-            - POSTGRES_DB=admin
-        ports:
-            - "5432:5432"
-        networks:
-            - microservices-network
+    # emails-db:
+    #     image: postgres:14.2-alpine
+    #     restart: unless-stopped
+    #     volumes:
+    #         - .postgres_data/emails_data:/var/lib/postgres
+    #     environment:
+    #         - POSTGRES_USER=admin
+    #         - POSTGRES_PASSWORD=root
+    #         - POSTGRES_DB=admin
+    #     ports:
+    #         - "5432:5432"
+    #     networks:
+    #         - microservices-network
 
-    orders-db:
-        image: postgres:14.2-alpine
-        restart: unless-stopped
-        volumes:
-            - .postgres_data/orders_data:/var/lib/postgres
-        environment:
-            - POSTGRES_USER=admin
-            - POSTGRES_PASSWORD=root
-            - POSTGRES_DB=admin
-        ports:
-            - "5433:5432"
-        networks:
-            - microservices-network
+    # orders-db:
+    #     image: postgres:14.2-alpine
+    #     restart: unless-stopped
+    #     volumes:
+    #         - .postgres_data/orders_data:/var/lib/postgres
+    #     environment:
+    #         - POSTGRES_USER=admin
+    #         - POSTGRES_PASSWORD=root
+    #         - POSTGRES_DB=admin
+    #     ports:
+    #         - "5433:5432"
+    #     networks:
+    #         - microservices-network
 
-    products-db:
-        image: postgres:14.2-alpine
-        restart: unless-stopped
-        volumes:
-            - .postgres_data/products_data:/var/lib/postgres
-        environment:
-            - POSTGRES_USER=admin
-            - POSTGRES_PASSWORD=root
-            - POSTGRES_DB=admin
-        ports:
-            - "5434:5432"
-        networks:
-            - microservices-network
+    # products-db:
+    #     image: postgres:14.2-alpine
+    #     restart: unless-stopped
+    #     volumes:
+    #         - .postgres_data/products_data:/var/lib/postgres
+    #     environment:
+    #         - POSTGRES_USER=admin
+    #         - POSTGRES_PASSWORD=root
+    #         - POSTGRES_DB=admin
+    #     ports:
+    #         - "5434:5432"
+    #     networks:
+    #         - microservices-network
 
-    auth-service-db:
-        image: postgres:14.2-alpine
-        restart: unless-stopped
-        volumes:
-            - .postgres_data/auth_data:/var/lib/postgres
-        environment:
-            - POSTGRES_USER=admin
-            - POSTGRES_PASSWORD=root
-            - POSTGRES_DB=admin
-        ports:
-            - "5435:5432"
-        networks:
-            - microservices-network
+    # auth-service-db:
+    #     image: postgres:14.2-alpine
+    #     restart: unless-stopped
+    #     volumes:
+    #         - .postgres_data/auth_data:/var/lib/postgres
+    #     environment:
+    #         - POSTGRES_USER=admin
+    #         - POSTGRES_PASSWORD=root
+    #         - POSTGRES_DB=admin
+    #     ports:
+    #         - "5435:5432"
+    #     networks:
+    #         - microservices-network
 
 networks:
     microservices-network:
