@@ -35,6 +35,7 @@ services:
             - SECRET_KEY=${SECRET_KEY}
             - DATABASE_HOST=${EMAILS_HOST}
             - DATABASE_NAME=${EMAILS_DATABASE_NAME}
+            - DATABASE_USER=${EMAILS_DATABASE_USER}
             - DATABASE_PASSWORD=${DATABASE_PASSWORD}
         networks:
             - microservices-network
@@ -50,6 +51,7 @@ services:
             - SECRET_KEY=${SECRET_KEY}
             - DATABASE_HOST=${EMAILS_HOST}
             - DATABASE_NAME=${EMAILS_DATABASE_NAME}
+            - DATABASE_USER=${EMAILS_DATABASE_USER}
             - DATABASE_PASSWORD=${DATABASE_PASSWORD}
         restart: always
         networks:
@@ -76,6 +78,7 @@ services:
             - SECRET_KEY=${SECRET_KEY}
             - DATABASE_HOST=${PRODUCTS_HOST}
             - DATABASE_NAME=${PRODUCTS_DATABASE_NAME}
+            - DATABASE_USER=${PRODUCTS_DATABASE_USER}
             - DATABASE_PASSWORD=${DATABASE_PASSWORD}
         networks:
             - microservices-network
@@ -91,7 +94,8 @@ services:
             - REDIS_URL=${REDIS_URL}
             - SECRET_KEY=${SECRET_KEY}
             - DATABASE_HOST=${PRODUCTS_HOST}
-            - DATABASE_NAME=${EMAILS_DATABASE_NAME}
+            - DATABASE_NAME=${PRODUCTS_DATABASE_NAME}
+            - DATABASE_USER=${PRODUCTS_DATABASE_USER}
             - DATABASE_PASSWORD=${DATABASE_PASSWORD}
         restart: always
         networks:
@@ -115,6 +119,7 @@ services:
             - SECRET_KEY=${SECRET_KEY}
             - DATABASE_HOST=${ORDERS_HOST}
             - DATABASE_NAME=${ORDERS_DATABASE_NAME}
+            - DATABASE_USER=${ORDERS_DATABASE_USER}
             - DATABASE_PASSWORD=${DATABASE_PASSWORD}
         networks:
             - microservices-network
@@ -140,6 +145,7 @@ services:
             - SECRET_KEY=${SECRET_KEY}
             - DATABASE_HOST=${AUTH_SERVICE_HOST}
             - DATABASE_NAME=${AUTH_SERVICE_DATABASE_NAME}
+            - DATABASE_USER=${AUTH_SERVICE_DATABASE_USER}
             - DATABASE_PASSWORD=${DATABASE_PASSWORD}
         networks:
             - microservices-network
