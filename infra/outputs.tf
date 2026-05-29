@@ -39,3 +39,10 @@ output "app_public_ip" {
 output "redis_endpoint" {
   value = aws_elasticache_cluster.redis.cache_nodes[0].address
 }
+
+output "db_endpoints" {
+  value = {
+    for k, db in aws_db_instance.service_db :
+    k => db.endpoint
+  }
+}

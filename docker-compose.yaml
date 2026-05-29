@@ -27,29 +27,32 @@ services:
         ports:
             - 8001:8001
         restart: always
-        depends_on:
-            - emails-db
-            - products-db
         environment:
             - RABBITMQ_HOST=${RABBITMQ_HOST}
             - RABBITMQ_USER=${RABBITMQ_USER}
             - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
             - ALLOWED_HOSTS=${ALLOWED_HOSTS}
             - SECRET_KEY=${SECRET_KEY}
+            - DATABASE_HOST=${EMAILS_HOST}
+            - DATABASE_NAME=${EMAILS_DATABASE_NAME}
+            - DATABASE_USER=${EMAILS_DATABASE_USER}
+            - DATABASE_PASSWORD=${DATABASE_PASSWORD}
         networks:
             - microservices-network
     
     emails-consumer:
         build: ./services/emails
         command: uv run python3 manage.py start_consumer
-        depends_on:
-            - products-db
         environment:
             - RABBITMQ_HOST=${RABBITMQ_HOST}
             - RABBITMQ_USER=${RABBITMQ_USER}
             - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
             - ALLOWED_HOSTS=${ALLOWED_HOSTS}
             - SECRET_KEY=${SECRET_KEY}
+            - DATABASE_HOST=${EMAILS_HOST}
+            - DATABASE_NAME=${EMAILS_DATABASE_NAME}
+            - DATABASE_USER=${EMAILS_DATABASE_USER}
+            - DATABASE_PASSWORD=${DATABASE_PASSWORD}
         restart: always
         networks:
             - microservices-network
@@ -66,8 +69,6 @@ services:
         ports:
             - 8002:8002
         restart: always
-        depends_on:
-            - products-db
         environment:
             - RABBITMQ_HOST=${RABBITMQ_HOST}
             - RABBITMQ_USER=${RABBITMQ_USER}
@@ -75,14 +76,16 @@ services:
             - ALLOWED_HOSTS=${ALLOWED_HOSTS}
             - REDIS_URL=${REDIS_URL}
             - SECRET_KEY=${SECRET_KEY}
+            - DATABASE_HOST=${PRODUCTS_HOST}
+            - DATABASE_NAME=${PRODUCTS_DATABASE_NAME}
+            - DATABASE_USER=${PRODUCTS_DATABASE_USER}
+            - DATABASE_PASSWORD=${DATABASE_PASSWORD}
         networks:
             - microservices-network
     
     products-consumer:
         build: ./services/products
         command: uv run python3 manage.py start_consumer
-        depends_on:
-            - products-db
         environment:
             - RABBITMQ_HOST=${RABBITMQ_HOST}
             - RABBITMQ_USER=${RABBITMQ_USER}
@@ -90,6 +93,10 @@ services:
             - ALLOWED_HOSTS=${ALLOWED_HOSTS}
             - REDIS_URL=${REDIS_URL}
             - SECRET_KEY=${SECRET_KEY}
+            - DATABASE_HOST=${PRODUCTS_HOST}
+            - DATABASE_NAME=${PRODUCTS_DATABASE_NAME}
+            - DATABASE_USER=${PRODUCTS_DATABASE_USER}
+            - DATABASE_PASSWORD=${DATABASE_PASSWORD}
         restart: always
         networks:
             - microservices-network
@@ -104,15 +111,16 @@ services:
             - 8003:8003
             - 5678:5678
         restart: always
-        depends_on:
-            - orders-db
-            - auth-service
         environment:
             - RABBITMQ_HOST=${RABBITMQ_HOST}
             - RABBITMQ_USER=${RABBITMQ_USER}
             - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
             - ALLOWED_HOSTS=${ALLOWED_HOSTS}
             - SECRET_KEY=${SECRET_KEY}
+            - DATABASE_HOST=${ORDERS_HOST}
+            - DATABASE_NAME=${ORDERS_DATABASE_NAME}
+            - DATABASE_USER=${ORDERS_DATABASE_USER}
+            - DATABASE_PASSWORD=${DATABASE_PASSWORD}
         networks:
             - microservices-network
 
@@ -128,72 +136,20 @@ services:
         ports:
             - 8004:8004
         restart: always
-        depends_on:
-            - auth-service-db
+
         environment:
             - RABBITMQ_HOST=${RABBITMQ_HOST}
             - RABBITMQ_USER=${RABBITMQ_USER}
             - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
             - ALLOWED_HOSTS=${ALLOWED_HOSTS}
             - SECRET_KEY=${SECRET_KEY}
+            - DATABASE_HOST=${AUTH_SERVICE_HOST}
+            - DATABASE_NAME=${AUTH_SERVICE_DATABASE_NAME}
+            - DATABASE_USER=${AUTH_SERVICE_DATABASE_USER}
+            - DATABASE_PASSWORD=${DATABASE_PASSWORD}
         networks:
             - microservices-network
 
-    emails-db:
-        image: postgres:14.2-alpine
-        restart: unless-stopped
-        volumes:
-            - .postgres_data/emails_data:/var/lib/postgres
-        environment:
-            - POSTGRES_USER=admin
-            - POSTGRES_PASSWORD=root
-            - POSTGRES_DB=admin
-        ports:
-            - "5432:5432"
-        networks:
-            - microservices-network
-
-    orders-db:
-        image: postgres:14.2-alpine
-        restart: unless-stopped
-        volumes:
-            - .postgres_data/orders_data:/var/lib/postgres
-        environment:
-            - POSTGRES_USER=admin
-            - POSTGRES_PASSWORD=root
-            - POSTGRES_DB=admin
-        ports:
-            - "5433:5432"
-        networks:
-            - microservices-network
-
-    products-db:
-        image: postgres:14.2-alpine
-        restart: unless-stopped
-        volumes:
-            - .postgres_data/products_data:/var/lib/postgres
-        environment:
-            - POSTGRES_USER=admin
-            - POSTGRES_PASSWORD=root
-            - POSTGRES_DB=admin
-        ports:
-            - "5434:5432"
-        networks:
-            - microservices-network
-
-    auth-service-db:
-        image: postgres:14.2-alpine
-        restart: unless-stopped
-        volumes:
-            - .postgres_data/auth_data:/var/lib/postgres
-        environment:
-            - POSTGRES_USER=admin
-            - POSTGRES_PASSWORD=root
-            - POSTGRES_DB=admin
-        ports:
-            - "5435:5432"
-        networks:
-            - microservices-network
 
 networks:
     microservices-network:
