@@ -159,6 +159,20 @@ RABBITMQ_PASSWORD=${var.rabbitmq_password}
 ALLOWED_HOSTS=localhost,127.0.0.1,auth-service,orders,products,emails,*.cloudfront.net
 SECRET_KEY=${var.django_secret_key}
 REDIS_URL=redis://${aws_elasticache_cluster.redis.cache_nodes[0].address}:6379/0
+AUTH_SERVICE_HOST=${aws_db_instance.service_db["auth-service"].address}
+AUTH_SERVICE_DATABASE_NAME=${aws_db_instance.service_db["auth-service"].db_name}
+AUTH_SERVICE_DATABASE_USER=${aws_db_instance.service_db["auth-service"].username}
+PRODUCTS_HOST=${aws_db_instance.service_db["products"].address}
+PRODUCTS_DATABASE_NAME=${aws_db_instance.service_db["products"].db_name}
+PRODUCTS_DATABASE_USER=${aws_db_instance.service_db["products"].username}
+ORDERS_HOST=${aws_db_instance.service_db["orders"].address}
+ORDERS_DATABASE_NAME=${aws_db_instance.service_db["orders"].db_name}
+ORDERS_DATABASE_USER=${aws_db_instance.service_db["orders"].username}
+EMAILS_HOST=${aws_db_instance.service_db["emails"].address}
+EMAILS_DATABASE_NAME=${aws_db_instance.service_db["emails"].db_name}
+EMAILS_DATABASE_USER=${aws_db_instance.service_db["emails"].username}
+DATABASE_PASSWORD=${var.db_password}
+
 ENVFILE
 
                   cd /home/ec2-user/app

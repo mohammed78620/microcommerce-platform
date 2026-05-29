@@ -51,3 +51,9 @@ variable "django_secret_key" {
   type        = string
   sensitive   = true
 }
+
+variable "db_password" {
+  description = "RDS password"
+  type        = string
+  sensitive   = true
+}
