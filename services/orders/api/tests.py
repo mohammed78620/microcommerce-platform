@@ -1,219 +1,257 @@
-from unittest.mock import patch
+from decimal import Decimal
+from unittest.mock import MagicMock, patch
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIRequestFactory, force_authenticate
 
-from .models import Order, OrderItem
-from .views.views import OrderViewSet
+from .models import Cart, CartItem
+from .views.views import CartViewSet
 
 User = get_user_model()
 
 
-class OrderViewSetListTest(TestCase):
+class CartViewSetTestCase(TestCase):
     def setUp(self):
         self.factory = APIRequestFactory()
-        self.user = User.objects.create_user(username="testuser", password="testpass")
-        self.view = OrderViewSet.as_view({"get": "list"})
+        self.user = User.objects.create_user(username="testuser", password="password")
+        self.view = CartViewSet.as_view(
+            {
+                "post": "add",
+                "delete": "remove",
+                "get": "list",
+            }
+        )
+
+    def test_add_creates_cart_and_item_when_none_exist(self):
+        request = self.factory.post("/cart/add/1/2/")
+        force_authenticate(request, user=self.user)
+
+        response = CartViewSet.as_view({"post": "add"})(request, product_id=1, variant_id=2)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(Cart.objects.filter(user_id=self.user.id).exists())
+        item = CartItem.objects.get(cart__user_id=self.user.id, product_id=1, variant_id=2)
+        self.assertEqual(item.quantity, 1)
+
+    def test_add_increments_quantity_when_item_already_in_cart(self):
+        cart = Cart.objects.create(user_id=self.user.id)
+        CartItem.objects.create(cart=cart, product_id=1, variant_id=2, quantity=1)
+
+        request = self.factory.post("/cart/add/1/2/")
+        force_authenticate(request, user=self.user)
+
+        CartViewSet.as_view({"post": "add"})(request, product_id=1, variant_id=2)
+
+        item = CartItem.objects.get(cart=cart, product_id=1, variant_id=2)
+        self.assertEqual(item.quantity, 2)
+
+    def test_add_reuses_existing_cart(self):
+        Cart.objects.create(user_id=self.user.id)
+
+        request = self.factory.post("/cart/add/5/3/")
+        force_authenticate(request, user=self.user)
+
+        CartViewSet.as_view({"post": "add"})(request, product_id=5, variant_id=3)
+
+        self.assertEqual(Cart.objects.filter(user_id=self.user.id).count(), 1)
+
+    def test_remove_decrements_quantity(self):
+        cart = Cart.objects.create(user_id=self.user.id)
+        CartItem.objects.create(cart=cart, product_id=1, variant_id=2, quantity=3)
+
+        request = self.factory.delete("/cart/remove/1/2/")
+        force_authenticate(request, user=self.user)
+
+        response = CartViewSet.as_view({"delete": "remove"})(request, product_id=1, variant_id=2)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        item = CartItem.objects.get(cart=cart, product_id=1, variant_id=2)
+        self.assertEqual(item.quantity, 2)
+
+    def test_remove_deletes_item_when_quantity_reaches_zero(self):
+        cart = Cart.objects.create(user_id=self.user.id)
+        CartItem.objects.create(cart=cart, product_id=1, variant_id=2, quantity=1)
+
+        request = self.factory.delete("/cart/remove/1/2/")
+        force_authenticate(request, user=self.user)
+
+        response = CartViewSet.as_view({"delete": "remove"})(request, product_id=1, variant_id=2)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertFalse(CartItem.objects.filter(cart=cart, product_id=1, variant_id=2).exists())
+
+    def test_remove_returns_400_when_item_does_not_exist(self):
+        Cart.objects.create(user_id=self.user.id)
+
+        request = self.factory.delete("/cart/remove/99/99/")
+        force_authenticate(request, user=self.user)
+
+        response = CartViewSet.as_view({"delete": "remove"})(request, product_id=99, variant_id=99)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     @patch("api.views.views.get_product")
-    @patch("api.views.views.get_jwt_token")
-    def test_list_returns_orders_with_items(self, mock_get_jwt, mock_get_product):
-        mock_get_jwt.return_value = "fake-token"
-        mock_get_product.return_value = {"name": "Test Product", "price": "9.99"}
+    @patch("api.views.views.get_jwt_token", return_value="mock-token")
+    def test_list_returns_items_with_product_details(self, mock_jwt, mock_get_product):
+        mock_get_product.return_value = {
+            "name": "Cool Shoe",
+            "product_variant": {"price": "49.99", "colour": "Red", "size": "medium", "type": "laptop"},
+        }
 
-        order = Order.objects.create(user_id=self.user.id)
-        OrderItem.objects.create(order=order, product_id=1, quantity=2)
+        cart = Cart.objects.create(user_id=self.user.id)
+        CartItem.objects.create(cart=cart, product_id=1, variant_id=2, quantity=2)
 
-        request = self.factory.get(f"/orders/{self.user.id}/")
+        request = self.factory.get("/cart/")
         force_authenticate(request, user=self.user)
-        response = self.view(request, user_id=self.user.id)
+
+        response = CartViewSet.as_view({"get": "list"})(request)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
-        self.assertIn("items", response.data[0])  # key is "items" not "order_items"
-        self.assertEqual(len(response.data[0]["items"]), 1)
+        self.assertEqual(response.data[0]["name"], "Cool Shoe - Red - medium - laptop")
+        self.assertAlmostEqual(response.data[0]["price"], 49.99)
 
-    @patch("api.views.views.get_jwt_token")
-    def test_list_returns_empty_when_no_orders(self, mock_get_jwt):
-        mock_get_jwt.return_value = "fake-token"
-
-        request = self.factory.get(f"/orders/{self.user.id}/")
+    @patch("api.views.views.get_product")
+    @patch("api.views.views.get_jwt_token", return_value="mock-token")
+    def test_list_creates_cart_if_not_exists(self, mock_jwt, mock_get_product):
+        request = self.factory.get("/cart/")
         force_authenticate(request, user=self.user)
-        response = self.view(request, user_id=self.user.id)
+
+        response = CartViewSet.as_view({"get": "list"})(request)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, [])
+        self.assertTrue(Cart.objects.filter(user_id=self.user.id).exists())
 
+    @patch("api.views.views.stripe.PaymentIntent.create")
+    @patch("api.views.views.calculate_total", return_value=9999)
+    @patch("api.views.views.create_order_from_items")
+    @patch("api.views.views.get_jwt_token", return_value="mock-token")
+    def test_checkout_creates_order_and_payment(self, mock_jwt, mock_create_order, mock_total, mock_stripe):
+        from .models import Order
 
-class OrderViewSetCreateTest(TestCase):
-    def setUp(self):
-        self.factory = APIRequestFactory()
-        self.user = User.objects.create_user(username="testuser", password="testpass")
-        self.view = OrderViewSet.as_view({"post": "create"})
-        self.valid_payload = {
-            "order_items": [
-                {"product_id": 1, "quantity": 2},
-                {"product_id": 2, "quantity": 1},
-            ]
-        }
-
-    def _make_request(self, data):
-        request = self.factory.post("/orders/", data, format="json")
-        force_authenticate(request, user=self.user)
-        return request
-
-    # ------------------------------------------------------------------
-    # Validation tests
-    # ------------------------------------------------------------------
-
-    def test_create_returns_400_when_no_order_data(self):
-        request = self._make_request({})
-        response = self.view(request)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-    def test_create_returns_400_when_order_items_missing(self):
-        request = self._make_request({"some_field": "value"})
-        response = self.view(request)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-    def test_create_returns_400_when_order_items_empty_list(self):
-        request = self._make_request({"order_items": []})
-        response = self.view(request)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-    # ------------------------------------------------------------------
-    # Product reservation tests
-    # ------------------------------------------------------------------
-
-    @patch("api.views.views.get_jwt_token", return_value="mock-jwt-token")
-    @patch("api.services.bulk_reserve_order", return_value=(False, 42))
-    def test_create_raises_when_product_out_of_stock(self, mock_reserve, mock_jwt):
-        request = self._make_request(self.valid_payload)
-        response = self.view(request)
-
-        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
-        self.assertIn("42", response.data)
-        mock_reserve.assert_called_once_with(
-            "mock-jwt-token",
-            [{"product_id": 1, "quantity": 2}, {"product_id": 2, "quantity": 1}],
+        mock_order = Order.objects.create(
+            user_id=self.user.id,
+            status=Order.OPEN,
         )
 
-    # ------------------------------------------------------------------
-    # Happy path
-    # ------------------------------------------------------------------
+        mock_create_order.return_value = mock_order
 
-    @patch("api.views.views.get_jwt_token", return_value="mock-jwt-token")
-    @patch("api.services.bulk_reserve_order", return_value=(True, None))
-    @patch("api.services.publish_message")
-    def test_create_order_success(self, mock_publish, mock_reserve, mock_jwt):
-        request = self._make_request(self.valid_payload)
-        response = self.view(request)
+        mock_intent = MagicMock()
+        mock_intent.id = "pi_test_123"
+        mock_intent.client_secret = "secret_abc"
+        mock_stripe.return_value = mock_intent
 
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        cart = Cart.objects.create(user_id=self.user.id)
+        CartItem.objects.create(cart=cart, product_id=1, variant_id=2, quantity=2)
 
-        # Order and items persisted
-        self.assertEqual(Order.objects.count(), 1)
-        self.assertEqual(OrderItem.objects.count(), 2)
-
-        # Email message published exactly once with correct topic
-        mock_publish.assert_called_once()
-        call_args = mock_publish.call_args
-        self.assertEqual(call_args[0][1], "send-order-email")
-
-        email_payload = call_args[0][0]
-        self.assertEqual(email_payload["user_id"], self.user.id)
-        self.assertEqual(email_payload["token"], "mock-jwt-token")
-
-    @patch("api.views.views.get_jwt_token", return_value="mock-jwt-token")
-    @patch("api.services.bulk_reserve_order", return_value=(True, None))
-    @patch("api.services.publish_message")
-    def test_create_uses_authenticated_user_id(self, mock_publish, mock_reserve, mock_jwt):
-        request = self._make_request(self.valid_payload)
-        self.view(request)
-
-        order = Order.objects.get()
-        self.assertEqual(order.user_id, self.user.id)
-
-    # ------------------------------------------------------------------
-    # Failure / rollback tests
-    # ------------------------------------------------------------------
-
-    @patch("api.views.views.get_jwt_token", return_value="mock-jwt-token")
-    @patch("api.services.bulk_reserve_order", return_value=(True, None))
-    @patch("api.services.publish_message")
-    @patch("api.models.OrderItem.objects.bulk_create", side_effect=Exception("DB error"))
-    def test_create_publishes_release_message_on_db_failure(
-        self, mock_bulk_create, mock_publish, mock_reserve, mock_jwt
-    ):
-        request = self._make_request(self.valid_payload)
-        response = self.view(request)
-
-        # view catches the exception and returns 400
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-        # release-product message must be sent; no email message
-        mock_publish.assert_called_once()
-        call_args = mock_publish.call_args
-        self.assertEqual(call_args[0][1], "release-product")
-
-    @patch("api.views.views.get_jwt_token", return_value="mock-jwt-token")
-    @patch("api.services.bulk_reserve_order", return_value=(True, None))
-    @patch("api.services.publish_message")
-    @patch("api.models.OrderItem.objects.bulk_create", side_effect=Exception("DB error"))
-    def test_create_rolls_back_order_on_db_failure(self, mock_bulk_create, mock_publish, mock_reserve, mock_jwt):
-        request = self._make_request(self.valid_payload)
-        self.view(request)
-
-        # Transaction rolled back — no order should remain
-        self.assertEqual(Order.objects.count(), 0)
-        self.assertEqual(OrderItem.objects.count(), 0)
-
-    # ------------------------------------------------------------------
-    # JWT token forwarding
-    # ------------------------------------------------------------------
-
-    @patch("api.views.views.get_jwt_token", return_value="bearer-xyz")
-    @patch("api.services.bulk_reserve_order", return_value=(True, None))
-    @patch("api.services.publish_message")
-    def test_create_forwards_jwt_to_reserve_and_email(self, mock_publish, mock_reserve, mock_jwt):
-        request = self._make_request(self.valid_payload)
-        self.view(request)
-
-        # Token forwarded to product service
-        reserve_call_token = mock_reserve.call_args[0][0]
-        self.assertEqual(reserve_call_token, "bearer-xyz")
-
-        # Token included in email payload
-        email_payload = mock_publish.call_args[0][0]
-        self.assertEqual(email_payload["token"], "bearer-xyz")
-
-
-class OrderViewSetCancelTest(TestCase):
-    def setUp(self):
-        self.factory = APIRequestFactory()
-        self.user = User.objects.create_user(username="testuser", password="testpass")
-        self.order = Order.objects.create(user_id=self.user.id)
-        self.view = OrderViewSet.as_view({"post": "cancel"})
-        self.valid_payload = {
-            "order_items": [
-                {"product_id": 1, "quantity": 2},
-                {"product_id": 2, "quantity": 1},
-            ]
-        }
-
-    def _make_request(self, data, pk):
-        request = self.factory.post(f"/orders/{pk}/cancel", data, format="json")
+        request = self.factory.post("/cart/checkout/")
         force_authenticate(request, user=self.user)
-        return request
 
-    def test_cancel_success(self):
-        request = self._make_request(self.valid_payload, self.order.pk)
-        response = self.view(request, self.order.pk)
-        self.assertEqual(response.status_code, 200)
+        response = CartViewSet.as_view({"post": "checkout"})(request)
+        self.assertEqual(response.status_code, 201)
+        self.assertIn("client_secret", response.data)
+        self.assertEqual(response.data["client_secret"], "secret_abc")
 
-    def test_cancel_fail(self):
-        request = self._make_request(self.valid_payload, self.order.pk)
-        response = self.view(request, 100000)
-        self.assertEqual(response.status_code, 404)
+        # Cart should be deleted after checkout
+        self.assertFalse(Cart.objects.filter(user_id=self.user.id).exists())
+
+        mock_stripe.assert_called_once_with(amount=9999, currency="gbp", metadata={"order_id": 1})
+
+    def test_checkout_returns_400_when_cart_is_empty(self):
+        Cart.objects.create(user_id=self.user.id)
+
+        request = self.factory.post("/cart/checkout/")
+        force_authenticate(request, user=self.user)
+
+        response = CartViewSet.as_view({"post": "checkout"})(request)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data, "Cart has no items")
+
+    @patch("api.views.views.create_order_from_items", side_effect=ValueError("Product out of stock: 1"))
+    @patch("api.views.views.get_jwt_token", return_value="mock-token")
+    def test_checkout_returns_409_when_product_out_of_stock(self, mock_jwt, mock_create_order):
+        cart = Cart.objects.create(user_id=self.user.id)
+        CartItem.objects.create(cart=cart, product_id=1, variant_id=2, quantity=1)
+
+        request = self.factory.post("/cart/checkout/")
+        force_authenticate(request, user=self.user)
+
+        response = CartViewSet.as_view({"post": "checkout"})(request)
+
+        self.assertEqual(response.status_code, 409)
+        self.assertIn("out of stock", response.data)
+
+    @patch("api.views.views.create_order_from_items", side_effect=Exception("Unexpected error"))
+    @patch("api.views.views.get_jwt_token", return_value="mock-token")
+    def test_checkout_returns_400_on_unexpected_exception(self, mock_jwt, mock_create_order):
+        cart = Cart.objects.create(user_id=self.user.id)
+        CartItem.objects.create(cart=cart, product_id=1, variant_id=2, quantity=1)
+
+        request = self.factory.post("/cart/checkout/")
+        force_authenticate(request, user=self.user)
+
+        response = CartViewSet.as_view({"post": "checkout"})(request)
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("Failed to create order", response.data)
+
+
+class CreateOrderFromItemsTestCase(TestCase):
+    """Unit tests for the create_order_from_items helper."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username="orderuser", password="password")
+        self.order_items_data = [
+            {"product_id": 1, "variant_id": 2, "quantity": 3},
+        ]
+
+    @patch("api.services.publish_message")
+    @patch("api.services.bulk_reserve_order", return_value=(True, None))
+    def test_creates_order_and_order_items(self, mock_reserve, mock_publish):
+        from .services import create_order_from_items
+
+        order = create_order_from_items(user=self.user, token="tok", order_items_data=self.order_items_data)
+
+        from .models import Order, OrderItem
+
+        self.assertIsNotNone(order.pk)
+        self.assertEqual(OrderItem.objects.filter(order=order).count(), 1)
+
+    @patch("api.services.publish_message")
+    @patch("api.services.bulk_reserve_order", return_value=(False, 1))
+    def test_raises_value_error_when_product_out_of_stock(self, mock_reserve, mock_publish):
+        from .services import create_order_from_items
+
+        with self.assertRaises(ValueError) as ctx:
+            create_order_from_items(user=self.user, token="tok", order_items_data=self.order_items_data)
+
+        self.assertIn("out of stock", str(ctx.exception).lower())
+        mock_publish.assert_not_called()
+
+    @patch("api.services.publish_message")
+    @patch("api.services.bulk_reserve_order", return_value=(True, None))
+    def test_publishes_release_and_reraises_on_db_error(self, mock_reserve, mock_publish):
+        from .services import create_order_from_items
+        from .models import Order
+
+        with patch.object(Order.objects, "create", side_effect=Exception("DB down")):
+            with self.assertRaises(Exception):
+                create_order_from_items(user=self.user, token="tok", order_items_data=self.order_items_data)
+
+        mock_publish.assert_called_once_with(self.order_items_data, "release-product")
+
+    @patch("api.services.publish_message")
+    @patch("api.services.bulk_reserve_order", return_value=(True, None))
+    def test_publishes_send_order_email_on_success(self, mock_reserve, mock_publish):
+        from .services import create_order_from_items
+
+        create_order_from_items(user=self.user, token="tok_xyz", order_items_data=self.order_items_data)
+
+        email_call = mock_publish.call_args
+        self.assertEqual(email_call[0][1], "send-order-email")
+        self.assertEqual(email_call[0][0]["token"], "tok_xyz")
+        self.assertEqual(email_call[0][0]["user_id"], self.user.id)

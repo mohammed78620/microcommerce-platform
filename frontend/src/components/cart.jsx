@@ -43,10 +43,10 @@ export default function CartPage() {
   };
 
 
-  const handleRemoveItem = async (productId) => {
+  const handleRemoveItem = async (productId, variantId) => {
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_ORDERS_URL}/api/cart/${productId}/`,
+        `${process.env.REACT_APP_ORDERS_URL}/api/cart/${productId}/${variantId}`,
         {
           method: 'DELETE',
           headers: {
@@ -111,7 +111,7 @@ export default function CartPage() {
                 <div className="item-quantity">{item.quantity}</div>
                 <div className="item-total">£{(item.price * item.quantity).toFixed(2)}</div>
                 <button
-                  onClick={() => handleRemoveItem(item.product_id)}
+                  onClick={() => handleRemoveItem(item.product_id, item.variant_id)}
                   className="remove-btn"
                 >
                   Remove

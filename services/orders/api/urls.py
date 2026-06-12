@@ -8,5 +8,5 @@ urlpatterns = [
     path("orders/<int:user_id>", OrderViewSet.as_view({"get": "list"})),
     path("cart/", CartViewSet.as_view({"get": "list"})),
     path("cart/checkout/", CartViewSet.as_view({"post": "checkout"})),
-    path("cart/<int:product_id>/", CartViewSet.as_view({"post": "add", "delete": "remove"})),
+    path("cart/<int:product_id>/<int:variant_id>/", CartViewSet.as_view({"post": "add", "delete": "remove"})),
 ]

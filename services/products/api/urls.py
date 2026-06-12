@@ -6,5 +6,8 @@ urlpatterns = [
     path("products/search/", ProductViewSet.as_view({"post": "search"})),
     path("products/reserve/<int:product_id>", ReserveStockView.as_view()),
     path("products/bulk_reserve/", BulkReserveStockView.as_view()),
-    path("products/<str:pk>/", ProductViewSet.as_view({"get": "retrieve", "put": "update", "delete": "destroy"})),
+    path(
+        "products/<int:product_id>/<int:variant_id>/",
+        ProductViewSet.as_view({"get": "retrieve", "put": "update", "delete": "destroy"}),
+    ),
 ]

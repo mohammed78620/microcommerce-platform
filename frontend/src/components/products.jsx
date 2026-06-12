@@ -1,6 +1,125 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './products.css';
 
+function ProductCard({ product, onAddToCart }) {
+  const variants = product.product_variant || [];
+  const [selectedVariant, setSelectedVariant] = useState(variants[0] || null);
+
+  return (
+    <div className="product-card">
+      <div className="product-image">
+        {product.image ? (
+          <img src={product.image} alt={product.name} />
+        ) : (
+          <div className="placeholder">No Image</div>
+        )}
+      </div>
+      <div className="product-details">
+        <h2>{product.name}</h2>
+        <p className="product-description">{product.description}</p>
+
+        {variants.length > 0 && (
+          <div className="product-variants">
+
+            {/* Type */}
+            <div className="variant-group">
+              <span className="variants-label">Type:</span>
+              <div className="variant-options">
+                {[...new Set(variants.map((v) => v.type))].map((type) => (
+                  <button
+                    key={type}
+                    className={`variant-btn ${selectedVariant?.type === type ? 'active' : ''}`}
+                    onClick={() => {
+                      const match = variants.find(
+                        (v) => v.type === type &&
+                        v.colour === selectedVariant?.colour &&
+                        v.size === selectedVariant?.size
+                      ) || variants.find((v) => v.type === type);
+                      setSelectedVariant(match);
+                    }}
+                  >
+                    {type}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Colour */}
+            <div className="variant-group">
+              <span className="variants-label">Colour:</span>
+              <div className="variant-options">
+                {[...new Set(variants.map((v) => v.colour))].map((colour) => (
+                  <button
+                    key={colour}
+                    className={`variant-btn ${selectedVariant?.colour === colour ? 'active' : ''}`}
+                    onClick={() => {
+                      const match = variants.find(
+                        (v) => v.colour === colour &&
+                        v.type === selectedVariant?.type &&
+                        v.size === selectedVariant?.size
+                      ) || variants.find((v) => v.colour === colour);
+                      setSelectedVariant(match);
+                    }}
+                    title={colour}
+                  >
+                    <span
+                      className="variant-swatch"
+                      style={{ backgroundColor: colour }}
+                    />
+                    <span className="variant-colour-name">{colour}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Size */}
+            <div className="variant-group">
+              <span className="variants-label">Size:</span>
+              <div className="variant-options">
+                {[...new Set(variants.map((v) => v.size))].map((size) => (
+                  <button
+                    key={size}
+                    className={`variant-btn ${selectedVariant?.size === size ? 'active' : ''}`}
+                    onClick={() => {
+                      const match = variants.find(
+                        (v) => v.size === size &&
+                        v.colour === selectedVariant?.colour &&
+                        v.type === selectedVariant?.type
+                      ) || variants.find((v) => v.size === size);
+                      setSelectedVariant(match);
+                    }}
+                  >
+                    {size}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* SKU */}
+            {selectedVariant?.sku && (
+              <p className="variant-sku">SKU: {selectedVariant.sku}</p>
+            )}
+
+          </div>
+        )}
+
+        <div className="product-footer">
+          <span className="product-price">
+            £{selectedVariant ? selectedVariant.price : '—'}
+          </span>
+          <button
+            onClick={() => onAddToCart(product.id, selectedVariant?.id)}
+            className="add-to-cart-btn"
+            disabled={!selectedVariant}
+          >
+            Add to Cart
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ProductsPage() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -52,8 +171,6 @@ export default function ProductsPage() {
 
       const data = await response.json();
 
-      console.log('[ProductsPage] API response:', data);
-
       if (data.results !== undefined) {
         setProducts(data.results);
         setHasNext(!!data.next);
@@ -77,7 +194,6 @@ export default function ProductsPage() {
     const trimmed = searchQuery.trim();
     setActiveSearch(trimmed);
     setPageNumber(1);
-    // If both values are already the same the effect won't fire — call directly
     if (trimmed === activeSearchRef.current && pageNumber === 1) {
       fetchProducts(trimmed, 1);
     }
@@ -94,23 +210,24 @@ export default function ProductsPage() {
   };
 
   const handlePageChange = (newPage) => {
-    // Read latest activeSearch from ref so we never have a stale closure
     fetchProducts(activeSearchRef.current, newPage);
     setPageNumber(newPage);
   };
 
-  const handleAddToCart = async (productId) => {
+  // Now accepts optional variantId
+  const handleAddToCart = async (productId, variantId) => {
     try {
-      const response = await fetch(
-        `${process.env.REACT_APP_ORDERS_URL}/api/cart/${productId}/`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      const url = variantId
+        ? `${process.env.REACT_APP_ORDERS_URL}/api/cart/${productId}/${variantId}/`
+        : `${process.env.REACT_APP_ORDERS_URL}/api/cart/${productId}/`;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
       if (!response.ok) throw new Error('Failed to add to cart');
 
@@ -150,16 +267,10 @@ export default function ProductsPage() {
             className="search-input"
           />
           {searchQuery && (
-            <button className="clear-search-btn" onClick={handleClearSearch} aria-label="Clear search">
-              ✕
-            </button>
+            <button className="clear-search-btn" onClick={handleClearSearch} aria-label="Clear search">✕</button>
           )}
         </div>
-        <button
-          className="search-btn"
-          onClick={handleSearch}
-          disabled={searchLoading}
-        >
+        <button className="search-btn" onClick={handleSearch} disabled={searchLoading}>
           {searchLoading ? <span className="search-spinner" /> : 'Search'}
         </button>
       </div>
@@ -174,45 +285,20 @@ export default function ProductsPage() {
         <>
           <div className="products-grid">
             {products.map((product) => (
-              <div key={product.id} className="product-card">
-                <div className="product-image">
-                  {product.image ? (
-                    <img src={product.image} alt={product.name} />
-                  ) : (
-                    <div className="placeholder">No Image</div>
-                  )}
-                </div>
-                <div className="product-details">
-                  <h2>{product.name}</h2>
-                  <p className="product-description">{product.description}</p>
-                  <div className="product-footer">
-                    <span className="product-price">£{product.price}</span>
-                    <button
-                      onClick={() => handleAddToCart(product.id)}
-                      className="add-to-cart-btn"
-                    >
-                      Add to Cart
-                    </button>
-                  </div>
-                </div>
-              </div>
+              <ProductCard
+                key={product.id}
+                product={product}
+                onAddToCart={handleAddToCart}
+              />
             ))}
           </div>
 
           <div className="pagination">
-            <button
-              className="pagination-btn"
-              onClick={() => handlePageChange(pageNumber - 1)}
-              disabled={!hasPrev}
-            >
+            <button className="pagination-btn" onClick={() => handlePageChange(pageNumber - 1)} disabled={!hasPrev}>
               ← Prev
             </button>
             <span className="pagination-info">Page {pageNumber}</span>
-            <button
-              className="pagination-btn"
-              onClick={() => handlePageChange(pageNumber + 1)}
-              disabled={!hasNext}
-            >
+            <button className="pagination-btn" onClick={() => handlePageChange(pageNumber + 1)} disabled={!hasNext}>
               Next →
             </button>
           </div>

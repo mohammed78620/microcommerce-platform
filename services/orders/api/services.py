@@ -59,7 +59,12 @@ def create_order_from_items(user, token, order_items_data: List[Dict[str, int]])
             order = Order.objects.create(user_id=user.id)
             OrderItem.objects.bulk_create(
                 [
-                    OrderItem(order=order, product_id=item["product_id"], quantity=item["quantity"])
+                    OrderItem(
+                        order=order,
+                        product_id=item["product_id"],
+                        quantity=item["quantity"],
+                        variant_id=item["variant_id"],
+                    )
                     for item in order_items_data
                 ]
             )
