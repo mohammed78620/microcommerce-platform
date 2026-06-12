@@ -2,7 +2,7 @@ import random
 
 from django.core.management.base import BaseCommand
 
-from api.models import Product
+from api.models import Product, ProductVariant, ProductVariantInventory
 
 
 class Command(BaseCommand):
@@ -41,6 +41,9 @@ class Command(BaseCommand):
     ]
 
     VARIANTS = ["Alpha", "Beta", "X", "Z", "Plus", "Max", "One", "Edge"]
+    COLOUR = ["black", "red", "blue"]
+    SIZE = ["Small", "Medium", "Large"]
+    TYPE = ["Phone", "Laptop", "Tablet"]
 
     def handle(self, *args, **kwargs):
         created_count = 0
@@ -54,11 +57,23 @@ class Command(BaseCommand):
             )
             product, created = Product.objects.get_or_create(
                 name=name,
-                defaults={
-                    "price": round(random.uniform(4.99, 299.99), 2),
-                    "quantity_available": random.randint(0, 500),
-                },
             )
+            for i in range(0, 3):
+
+                product_variant, created = ProductVariant.objects.get_or_create(
+                    product=product,
+                    colour=random.choice(self.COLOUR),
+                    size=random.choice(self.SIZE),
+                    type=random.choice(self.TYPE),
+                    defaults={
+                        "price": round(random.uniform(4.99, 299.99), 2),
+                    },
+                )
+                if not created:
+                    continue
+                ProductVariantInventory.objects.get_or_create(
+                    product_variant=product_variant, quantity_available=random.randint(0, 500)
+                )
 
             if created:
                 created_count += 1

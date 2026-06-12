@@ -9,13 +9,14 @@ class Cart(models.Model):
 class CartItem(models.Model):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name="cart_items")
     product_id = models.IntegerField(db_index=True)
+    variant_id = models.IntegerField(db_index=True)
     quantity = models.PositiveIntegerField(default=1)
 
 
 class CartItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = CartItem
-        fields = ["id", "product_id", "quantity"]
+        fields = ["id", "product_id", "quantity", "variant_id"]
 
 
 class CartSerializer(serializers.ModelSerializer):
@@ -51,6 +52,7 @@ class Order(models.Model):
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="order_items")
     product_id = models.PositiveIntegerField()
+    variant_id = models.PositiveIntegerField()
     quantity = models.PositiveIntegerField()
 
     def __str__(self):

@@ -38,6 +38,8 @@ services:
             - products-db
         networks:
             - microservices-network
+        stdin_open: true
+        tty: true
     
     emails-consumer:
         build: ./services/emails
@@ -70,6 +72,8 @@ services:
             - rabbitmq
         networks:
             - microservices-network
+        stdin_open: true
+        tty: true
     
     products-consumer:
         build: ./services/products
@@ -101,6 +105,8 @@ services:
             - rabbitmq
         networks:
             - microservices-network
+        stdin_open: true
+        tty: true
 
     auth-service:
         build: ./services/auth_service
@@ -120,6 +126,8 @@ services:
             - auth-service-db
         networks:
             - microservices-network
+        stdin_open: true
+        tty: true
 
     emails-db:
         image: postgres:14.2-alpine

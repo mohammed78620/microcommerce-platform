@@ -7,22 +7,19 @@ import requests
 
 from rest_framework import viewsets, status
 from rest_framework.response import Response
-from rest_framework.views import APIView
 from django.db import transaction
-from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 
 from ..models import Order, OrderItem, Cart, CartItem, Payment, CartItemSerializer
-from ..serializers import OrderSerializer, OrderItemSerializer
+from ..serializers import OrderItemSerializer
 from ..services import create_order_from_items, get_jwt_token
-from microservices.producer import publish_message
 from orders import settings
 
 
-def get_product(product_id: int, token: str) -> Dict:
+def get_product(product_id: int, variant_id: int, token: str) -> Dict:
     try:
         response = requests.get(
-            f"{settings.PRODUCTS_SERVICE_URL}api/products/{product_id}/",
+            f"{settings.PRODUCTS_SERVICE_URL}api/products/{product_id}/{variant_id}/",
             headers={
                 "Authorization": f"Bearer {token}",
                 "Accept": "application/json",
@@ -41,29 +38,15 @@ def calculate_total(order_items_data: List[Dict[str, int]], token: str) -> int:
         total = Decimal("0")
         for item in order_items_data:
             product_id = item["product_id"]
-            response = get_product(product_id=product_id, token=token)
-            price = Decimal(str(response["price"]))
+            variant_id = item["variant_id"]
+            response = get_product(product_id=product_id, variant_id=variant_id, token=token)
+            price = Decimal(str(response["product_variant"]["price"]))
             quantity = Decimal(str(item["quantity"]))
             item_total = price * quantity
             total += item_total
     except requests.exceptions.RequestException:
         raise AuthenticationFailed("Auth service unreachable")
     return int(total * 100)
-
-
-def get_product(product_id: int, token: str) -> Dict:
-    try:
-        response = requests.get(
-            f"{settings.PRODUCTS_SERVICE_URL}api/products/{product_id}/",
-            headers={
-                "Authorization": f"Bearer {token}",
-                "Accept": "application/json",
-            },
-            timeout=5,
-        )
-    except requests.exceptions.RequestException:
-        raise AuthenticationFailed("Auth service unreachable")
-    return response.json()
 
 
 class OrderViewSet(viewsets.ViewSet):
@@ -83,8 +66,11 @@ class OrderViewSet(viewsets.ViewSet):
             return Response([], status=status.HTTP_200_OK)
 
         token = get_jwt_token(request)
-        product_ids = {item.product_id for item in order_items}
-        products = {pid: get_product(product_id=pid, token=token) for pid in product_ids}
+        product_variant_ids = {f"{item.product_id}-{item.variant_id}" for item in order_items}
+        products = {
+            pvid: get_product(product_id=pvid.split("-")[0], variant_id=pvid.split("-")[1], token=token)
+            for pvid in product_variant_ids
+        }
 
         # Get order statuses
         orders = Order.objects.filter(user_id=user_id)
@@ -93,12 +79,12 @@ class OrderViewSet(viewsets.ViewSet):
 
         orders_map = defaultdict(list)
         for item in order_items:
-            product = products.get(item.product_id, {})
+            product = products.get(f"{item.product_id}-{item.variant_id}", {})
             orders_map[item.order_id].append(
                 {
                     **OrderItemSerializer(item).data,
-                    "name": product.get("name"),
-                    "price": float(product.get("price")),
+                    "name": f"{product.get('name')} - {product['product_variant']['colour']} - {product['product_variant']['size']} - {product['product_variant']['type']}",
+                    "price": float(product["product_variant"]["price"]),
                 }
             )
 
@@ -134,34 +120,41 @@ class OrderViewSet(viewsets.ViewSet):
 
 
 class CartViewSet(viewsets.ViewSet):
-    def add(self, request, product_id):
+    def add(self, request, product_id, variant_id):
         # if user has no cart create cart with product
         # if product exists increment quantity
         user = request.user
 
         cart, _ = Cart.objects.get_or_create(user_id=user.id)
-        cart_item, created = CartItem.objects.get_or_create(cart=cart, product_id=product_id)
+        cart_item, created = CartItem.objects.get_or_create(cart=cart, product_id=product_id, variant_id=variant_id)
         if not created:
             cart_item.quantity += 1
             cart_item.save()
 
         return Response(f"added {product_id} to cart", status=status.HTTP_201_CREATED)
 
-    def remove(self, request, product_id):
+    def remove(self, request, product_id, variant_id):
         # decrement products quantity or remove if 0
+
         user = request.user
         cart = Cart.objects.get(user_id=user.id)
         try:
-            cart_item = CartItem.objects.get(cart=cart, product_id=product_id)
+            cart_item = CartItem.objects.get(cart=cart, product_id=product_id, variant_id=variant_id)
         except CartItem.DoesNotExist:
-            Response(f"product {product_id} does not exist", status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                f"product {product_id} variant {variant_id} does not exist", status=status.HTTP_400_BAD_REQUEST
+            )
         cart_item.quantity -= 1
         if cart_item.quantity == 0:
             cart_item.delete()
-            Response(f"removed {product_id} cart", status=status.HTTP_201_CREATED)
+            return Response(
+                f"removed product {product_id} variant {variant_id} from cart", status=status.HTTP_201_CREATED
+            )
         else:
             cart_item.save()
-        return Response(f"removed one {product_id} cart", status=status.HTTP_201_CREATED)
+        return Response(
+            f"removed one product {product_id} variant {variant_id} from cart", status=status.HTTP_201_CREATED
+        )
 
     def list(self, request):
         user = request.user
@@ -171,26 +164,37 @@ class CartViewSet(viewsets.ViewSet):
         token = get_jwt_token(request)
         items = []
         for item in cart_items:
-            product = get_product(product_id=item.product_id, token=token)
+            product = get_product(
+                product_id=item.product_id,
+                variant_id=item.variant_id,
+                token=token,
+            )
             items.append(
-                {**CartItemSerializer(item).data, "price": float(product["price"]), "name": product["name"]},
+                {
+                    **CartItemSerializer(item).data,
+                    "price": float(product["product_variant"]["price"]),
+                    "name": f'{product["name"]} - {product["product_variant"]["colour"]} - {product["product_variant"]["size"]} - {product["product_variant"]["type"]}',
+                },
             )
 
         return Response(items, status=status.HTTP_200_OK)
 
     def checkout(self, request):
         # from cart convert items into orderitems List[Dict[str, int]] and pass to func create_order_from_items
+
         user = request.user
         cart = Cart.objects.get(user_id=user.id)
-        cart_items = CartItem.objects.filter(cart=cart)
+        cart_items: List[CartItem] = CartItem.objects.filter(cart=cart)
         if not cart_items.count() > 0:
             return Response("Cart has no items", status=status.HTTP_400_BAD_REQUEST)
         order_items_data = [
-            {"product_id": cart_item.product_id, "quantity": cart_item.quantity} for cart_item in cart_items
+            {"product_id": cart_item.product_id, "variant_id": cart_item.variant_id, "quantity": cart_item.quantity}
+            for cart_item in cart_items
         ]
         try:
             order = create_order_from_items(user=user, token=get_jwt_token(request), order_items_data=order_items_data)
             total = calculate_total(order_items_data, get_jwt_token(request))
+            print(total)
             intent = stripe.PaymentIntent.create(amount=total, currency="gbp", metadata={"order_id": order.pk})
             Payment.objects.create(
                 order_id=order,
@@ -201,6 +205,6 @@ class CartViewSet(viewsets.ViewSet):
         except ValueError as e:
             return Response(str(e), status=409)
         except Exception as e:
-            return Response(f"Failed to create order {e}", status=400)
+            return Response(f"Failed to create order: {type(e).__name__}: {e}", status=400)
 
         return Response({"order_id": 1, "client_secret": intent.client_secret}, status=201)

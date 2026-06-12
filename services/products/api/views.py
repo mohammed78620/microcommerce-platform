@@ -10,10 +10,10 @@ from rest_framework.request import Request
 from django.contrib.postgres.search import SearchVector
 from django.core.paginator import Paginator
 from common.utils import CachedPaginator
-from django.core.cache import cache
+from django.shortcuts import get_object_or_404
 
-from .models import Product
-from .serializers import ProductSerializer
+from .models import Product, ProductVariantInventory, ProductVariant
+from .serializers import ProductSerializer, ProductVariantSerializer
 
 
 class InsufficientStockError(APIException):
@@ -29,8 +29,8 @@ class ProductViewSet(viewsets.ViewSet):
         page_size = int(request.query_params.get("limit"))
         page_number = int(request.query_params.get("page_number"))
         cache_key = f"products_per_page"
+        products = Product.objects.all().prefetch_related("product_variant").order_by("name")
 
-        products = Product.objects.all().order_by("-created_at")
         paginator = self.paginator_class(object_list=products, per_page=page_size, cache_key=cache_key)
         page_obj = paginator.page(page_number)
         serializer = ProductSerializer(page_obj, many=True)
@@ -46,16 +46,20 @@ class ProductViewSet(viewsets.ViewSet):
             status=status.HTTP_200_OK,
         )
 
-    def create(self, request):
+    def create(self, request, quantity_avaliable):
         serializer = ProductSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        product = serializer.save()
+
+        ProductVariantInventory.objects.create(product=product, quantity_avaliable=quantity_avaliable)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    def retrieve(self, request, pk=None):
-        product = Product.objects.get(id=pk)
-        serializer = ProductSerializer(product)
-        return Response(serializer.data)
+    def retrieve(self, request, product_id, variant_id):
+        product = get_object_or_404(Product, id=product_id)
+        product_variant = get_object_or_404(ProductVariant, pk=variant_id, product=product_id)
+        data = ProductSerializer(product).data
+        data["product_variant"] = ProductVariantSerializer(product_variant).data
+        return Response(data)
 
     def update(self, request, pk=None):
         product = Product.objects.get(id=pk)
@@ -109,14 +113,21 @@ class ProductViewSet(viewsets.ViewSet):
 
 class ReserveStockView(APIView):
     def post(self, request, product_id):
+        """
+        reserve a specific quantity for a product in `api_products_inventory` table
+        """
         payload = json.loads(request.body)
         qty = payload["quantity"]
+        variant_id = payload["variant_id"]
         try:
-            product = Product.objects.get(pk=product_id)
+            product_variant_inventory: ProductVariantInventory = ProductVariantInventory.objects.get(
+                product_variant__pk=variant_id,
+                product_variant__product__pk=product_id,
+            )
         except Product.DoesNotExist:
             Response("Product does not exist", status=status.HTTP_404_NOT_FOUND)
 
-        updated = product.reserve(qty)
+        updated = product_variant_inventory.reserve(qty)
         if not updated:
             return Response(f"No avaliable stock for product {product_id}", status=status.HTTP_400_BAD_REQUEST)
 
@@ -125,13 +136,19 @@ class ReserveStockView(APIView):
 
 class BulkReserveStockView(APIView):
     def post(self, request):
-        # [{"product_id": 1, "quantity": 2}, {"product_id": 2, "quantity": 1}]
+        """
+        Bulk reserve a list of products and make sure the database is a transaction
+        """
         items = request.data["items"]
         try:
             with transaction.atomic():
                 for item in items:
-                    product = Product.objects.select_for_update().get(pk=int(item["product_id"]))
-                    success = product.reserve(item["quantity"])
+                    product_id, variant_id = item["product_id"], item["variant_id"]
+                    product_variant_inventory: ProductVariantInventory = ProductVariantInventory.objects.get(
+                        product_variant__pk=variant_id,
+                        product_variant__product__pk=product_id,
+                    )
+                    success = product_variant_inventory.reserve(item["quantity"])
                     if not success:
                         raise InsufficientStockError(item["product_id"])
         except Product.DoesNotExist as e:

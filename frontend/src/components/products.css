@@ -306,3 +306,57 @@
   font-size: 14px;
   color: #555;
 }
+
+/* Variant selector */
+.product-variants {
+  margin: 10px 0;
+}
+
+.variants-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #555;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.variant-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.variant-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border: 1.5px solid #ddd;
+  border-radius: 20px;
+  background: white;
+  cursor: pointer;
+  font-size: 0.78rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.variant-btn:hover {
+  border-color: #999;
+}
+
+.variant-btn.active {
+  border-color: #333;
+  box-shadow: 0 0 0 1px #333;
+  font-weight: 600;
+}
+
+.variant-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid rgba(0,0,0,0.15);
+  flex-shrink: 0;
+}
+
+.variant-colour-name {
+  text-transform: capitalize;
+}
