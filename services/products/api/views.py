@@ -1,19 +1,20 @@
 import json
+from typing import Dict, List
 
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.views import View
+from django.db.models import Prefetch
 from django.db import transaction
 from rest_framework.exceptions import APIException
 from rest_framework.request import Request
 from django.contrib.postgres.search import SearchVector
 from django.core.paginator import Paginator
-from common.utils import CachedPaginator
+from common.utils import CachedPaginator, flatten_subtree, get_tags, get_tree
 from django.shortcuts import get_object_or_404
 
-from .models import Product, ProductVariantInventory, ProductVariant
-from .serializers import ProductSerializer, ProductVariantSerializer
+from .models import Product, ProductVariantInventory, ProductVariant, Category, Tag
+from .serializers import ProductSerializer, ProductVariantSerializer, CategorySerializer, TagSerializer
 
 
 class InsufficientStockError(APIException):
@@ -109,6 +110,103 @@ class ProductViewSet(viewsets.ViewSet):
             },
             status=status.HTTP_200_OK,
         )
+
+
+class ProductCategoryTagViewSet(viewsets.ViewSet):
+    paginator_class = CachedPaginator
+
+    def list_categories(self, request):
+        limit = int(request.query_params["limit"])
+        categories = Category.objects.all()[:limit]
+        serializer = CategorySerializer(categories, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def list_tags(self, request):
+        limit = int(request.query_params["limit"])
+        tag = Tag.objects.all()[:limit]
+        serializer = TagSerializer(tag, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def get_products(self, request, category_slug):
+        page_size = int(request.query_params.get("limit", 10))
+        page_number = int(request.query_params.get("page_number", 1))
+        tags: str = request.query_params.get("tags")
+
+        try:
+            category = Category.objects.get(slug=category_slug)
+        except Category.DoesNotExist:
+            return Response({"detail": "Category not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        if tags:
+            tags = tags.split(",")
+            try:
+                tag_ids = get_tags(tags)
+            except Tag.DoesNotExist:
+                return Response(
+                    {"count": 0, "total_pages": 0, "next": False, "previous": False, "results": []},
+                    status=status.HTTP_200_OK,
+                )
+
+        tags_key = ",".join(sorted(tags)) if tags else "none"
+        cache_key = f"products_{category_slug}_page_{page_number}_size_{page_size}_tags_{tags_key}"
+
+        category = Category.objects.get(slug=category_slug)
+        sub_tree = get_tree(category=category)
+        categories = flatten_subtree(sub_tree)
+        category_ids = [c.pk for c in categories]
+
+        if tags:
+            products = (
+                Product.objects.filter(
+                    product_variant__category_id__in=category_ids,
+                    product_variant__tags__id__in=tag_ids,
+                )
+                .prefetch_related(
+                    Prefetch(
+                        "product_variant",
+                        queryset=ProductVariant.objects.filter(
+                            category_id__in=category_ids,
+                            tags__id__in=tag_ids,
+                        )
+                        .select_related("category")
+                        .prefetch_related(
+                            Prefetch(
+                                "tags",
+                                queryset=Tag.objects.filter(id__in=tag_ids),
+                            )
+                        )
+                        .distinct(),
+                    )
+                )
+                .distinct()
+            )
+        else:
+            products = (
+                Product.objects.filter(
+                    product_variant__category_id__in=category_ids,
+                )
+                .prefetch_related(
+                    Prefetch(
+                        "product_variant",
+                        queryset=ProductVariant.objects.filter(
+                            category_id__in=category_ids,
+                        ).select_related("category"),
+                    )
+                )
+                .distinct()
+            )
+
+        paginator = self.paginator_class(object_list=products, per_page=page_size, cache_key=cache_key)
+        page_obj = paginator.page(page_number)
+        serializer = ProductSerializer(page_obj, many=True)
+        response_data = {
+            "count": paginator.count,
+            "total_pages": paginator.num_pages,
+            "next": page_obj.has_next(),
+            "previous": page_obj.has_previous(),
+            "results": list(serializer.data),
+        }
+        return Response(response_data, status=status.HTTP_200_OK)
 
 
 class ReserveStockView(APIView):
