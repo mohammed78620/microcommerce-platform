@@ -116,6 +116,7 @@ jobs:
           DATABASE_HOST: "localhost"
           DATABASE_PORT: "5432"
           DATABASE_NAME: product-db
+          SECRET_KEY: ${{ secrets.AUTH_SERVICE_CI_SECRET_KEY }}
           REDIS_URL: "redis://localhost:6379/1"
         run: uv run python manage.py test --buffer
 
