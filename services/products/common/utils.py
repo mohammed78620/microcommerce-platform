@@ -1,5 +1,9 @@
+from typing import Dict, List
+
 from django.core.cache import cache
 from django.core.paginator import Paginator, Page
+
+from api.models import Category, Tag
 
 
 class CachedPaginator(Paginator):
@@ -34,3 +38,59 @@ class CachedPaginator(Paginator):
     def build_cache_key(self, page_number):
         """Appends the relevant pagination bits to the cache key."""
         return "%s:%s:%s" % (self.cache_key, self.per_page, page_number)
+
+
+def get_tree(category: Category, depth=10) -> Dict:
+    """
+    get sub tree at specific depth from a category as root node
+
+    Args:
+        category (Category): the root node
+        depth (int, optional): the depth of sub tree. Defaults to 10.
+
+    Returns:
+        Dict: a category sub tree
+    """
+    if depth < 1:
+        return []
+    return {
+        "category": category,
+        "children": [get_tree(children, depth - 1) for children in category.children.all()],
+    }
+
+
+from collections import deque
+
+
+def flatten_subtree(tree):
+    items = []
+    queue = deque()
+    queue.append(tree)
+
+    while queue:
+        node = queue.popleft()
+        for child in node["children"]:
+            queue.append(child)
+        items.append(node["category"])
+
+    return items
+
+
+def get_tags(tags: List) -> list:
+    """
+    check if tags exists in product db
+
+    Args:
+        tags (List): list of tags
+
+    Returns:
+        list: original list of tags ids
+    """
+    tag_ids = []
+    for tag in tags:
+        try:
+            tag = Tag.objects.get(name=tag)
+            tag_ids.append(tag.pk)
+        except Tag.DoesNotExist as e:
+            raise e
+    return tag_ids

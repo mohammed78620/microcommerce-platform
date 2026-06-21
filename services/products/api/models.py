@@ -34,6 +34,19 @@ class Product(models.Model):
         db_table = "api_products"
 
 
+class Category(models.Model):
+    name = models.CharField(max_length=50)
+    slug = models.SlugField(unique=True)
+    parent = models.ForeignKey("self", null=True, blank=True, on_delete=models.SET_NULL, related_name="children")
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+
+
+class Tag(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    slug = models.SlugField(unique=True)
+
+
 class ProductVariant(models.Model):
     product = models.ForeignKey(Product, on_delete=models.DO_NOTHING, related_name="product_variant")
     colour = models.CharField(max_length=30, choices=ColourChoices.choices, default=ColourChoices.WHITE)
@@ -41,6 +54,9 @@ class ProductVariant(models.Model):
     type = models.CharField(max_length=50, choices=TypeChoices.choices, default=TypeChoices.NO_TYPE)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     sku = models.CharField(max_length=21, unique=True)
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
+
+    tags = models.ManyToManyField(Tag, blank=True)
 
     def _generate_sku(self):
         prefix = str(self.type)[:3].upper()
