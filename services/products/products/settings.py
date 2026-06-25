@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.postgres",
     "rest_framework",
+    "django_extensions",
     "corsheaders",
     "api",
 ]
@@ -161,3 +162,6 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # CORS_ORIGIN_ALLOW_ALL = True
 
 APPEND_SLASH = True
+
+# the import when run `python manage.py shell_plus`
+SHELL_PLUS_IMPORTS = ["from api.models import *", "from api.views import *"]
