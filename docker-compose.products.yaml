@@ -1,0 +1,48 @@
+services:
+
+    products:
+        build: ./services/products
+        command: >
+            sh -c "uv run python3 manage.py seed_products &&
+                uv run python3 manage.py runserver 0.0.0.0:8002"
+        volumes:
+            - ./services/products:/app
+            - /app/.venv
+        ports:
+            - 8002:8002
+        restart: always
+        environment:
+            - RABBITMQ_HOST=${RABBITMQ_HOST}
+            - RABBITMQ_USER=${RABBITMQ_USER}
+            - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+            - ALLOWED_HOSTS=${ALLOWED_HOSTS}
+            - REDIS_URL=${REDIS_URL}
+            - SECRET_KEY=${SECRET_KEY}
+            - DATABASE_HOST=${PRODUCTS_HOST}
+            - DATABASE_NAME=${PRODUCTS_DATABASE_NAME}
+            - DATABASE_USER=${PRODUCTS_DATABASE_USER}
+            - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+        networks:
+            - microservices-network
+
+    products-consumer:
+        build: ./services/products
+        command: uv run python3 manage.py start_consumer
+        environment:
+            - RABBITMQ_HOST=${RABBITMQ_HOST}
+            - RABBITMQ_USER=${RABBITMQ_USER}
+            - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+            - ALLOWED_HOSTS=${ALLOWED_HOSTS}
+            - REDIS_URL=${REDIS_URL}
+            - SECRET_KEY=${SECRET_KEY}
+            - DATABASE_HOST=${PRODUCTS_HOST}
+            - DATABASE_NAME=${PRODUCTS_DATABASE_NAME}
+            - DATABASE_USER=${PRODUCTS_DATABASE_USER}
+            - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+        restart: always
+        networks:
+            - microservices-network
+
+networks:
+    microservices-network:
+        driver: bridge

@@ -1,0 +1,44 @@
+services:
+
+    emails:
+        build: ./services/emails
+        command: bash -c "uv run python3 manage.py runserver 0.0.0.0:8001"
+        volumes:
+            - ./services/emails:/app
+            - /app/.venv
+        ports:
+            - 8001:8001
+        restart: always
+        environment:
+            - RABBITMQ_HOST=${RABBITMQ_HOST}
+            - RABBITMQ_USER=${RABBITMQ_USER}
+            - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+            - ALLOWED_HOSTS=${ALLOWED_HOSTS}
+            - SECRET_KEY=${SECRET_KEY}
+            - DATABASE_HOST=${EMAILS_HOST}
+            - DATABASE_NAME=${EMAILS_DATABASE_NAME}
+            - DATABASE_USER=${EMAILS_DATABASE_USER}
+            - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+        networks:
+            - microservices-network
+
+    emails-consumer:
+        build: ./services/emails
+        command: uv run python3 manage.py start_consumer
+        environment:
+            - RABBITMQ_HOST=${RABBITMQ_HOST}
+            - RABBITMQ_USER=${RABBITMQ_USER}
+            - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+            - ALLOWED_HOSTS=${ALLOWED_HOSTS}
+            - SECRET_KEY=${SECRET_KEY}
+            - DATABASE_HOST=${EMAILS_HOST}
+            - DATABASE_NAME=${EMAILS_DATABASE_NAME}
+            - DATABASE_USER=${EMAILS_DATABASE_USER}
+            - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+        restart: always
+        networks:
+            - microservices-network
+
+networks:
+    microservices-network:
+        driver: bridge

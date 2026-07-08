@@ -1,0 +1,28 @@
+services:
+
+    orders:
+        build: ./services/orders
+        command: bash -c "uv run python3 manage.py runserver 0.0.0.0:8003"
+        volumes:
+            - ./services/orders:/app
+            - /app/.venv
+        ports:
+            - 8003:8003
+            - 5678:5678
+        restart: always
+        environment:
+            - RABBITMQ_HOST=${RABBITMQ_HOST}
+            - RABBITMQ_USER=${RABBITMQ_USER}
+            - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+            - ALLOWED_HOSTS=${ALLOWED_HOSTS}
+            - SECRET_KEY=${SECRET_KEY}
+            - DATABASE_HOST=${ORDERS_HOST}
+            - DATABASE_NAME=${ORDERS_DATABASE_NAME}
+            - DATABASE_USER=${ORDERS_DATABASE_USER}
+            - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+        networks:
+            - microservices-network
+
+networks:
+    microservices-network:
+        driver: bridge

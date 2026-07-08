@@ -1,0 +1,30 @@
+services:
+
+    auth-service:
+        build: ./services/auth_service
+        command: >
+            sh -c "uv run python3 manage.py wait_for_db &&
+             uv run python3 manage.py seed_users &&
+             uv run python3 manage.py runserver 0.0.0.0:8004"
+        volumes:
+            - ./services/auth_service:/app
+            - /app/.venv
+        ports:
+            - 8004:8004
+        restart: always
+        environment:
+            - RABBITMQ_HOST=${RABBITMQ_HOST}
+            - RABBITMQ_USER=${RABBITMQ_USER}
+            - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+            - ALLOWED_HOSTS=${ALLOWED_HOSTS}
+            - SECRET_KEY=${SECRET_KEY}
+            - DATABASE_HOST=${AUTH_SERVICE_HOST}
+            - DATABASE_NAME=${AUTH_SERVICE_DATABASE_NAME}
+            - DATABASE_USER=${AUTH_SERVICE_DATABASE_USER}
+            - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+        networks:
+            - microservices-network
+
+networks:
+    microservices-network:
+        driver: bridge
