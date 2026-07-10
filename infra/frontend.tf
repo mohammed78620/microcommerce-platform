@@ -57,13 +57,13 @@ resource "aws_cloudfront_distribution" "frontend" {
   }
 
   origin {
-    domain_name = aws_instance.app.public_dns
+    domain_name = "${aws_apigatewayv2_api.main.id}.execute-api.${var.aws_region}.amazonaws.com"
     origin_id   = "API"
 
     custom_origin_config {
       http_port              = 80
       https_port             = 443
-      origin_protocol_policy = "http-only"
+      origin_protocol_policy = "https-only"
       origin_ssl_protocols   = ["TLSv1.2"]
     }
   }
@@ -95,10 +95,10 @@ resource "aws_cloudfront_distribution" "frontend" {
 
     forwarded_values {
       query_string = true
-      
+
       # ---- CHANGED THIS: Avoid passing "*" header to a custom EC2 origin ----
-      headers      = ["Authorization", "Origin", "Access-Control-Request-Headers", "Access-Control-Request-Method"]
-      
+      headers = ["Authorization", "Origin", "Access-Control-Request-Headers", "Access-Control-Request-Method"]
+
       cookies { forward = "all" }
     }
 

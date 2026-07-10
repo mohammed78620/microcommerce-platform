@@ -27,8 +27,8 @@ class ProductViewSet(viewsets.ViewSet):
     paginator_class = CachedPaginator
 
     def list(self, request):
-        page_size = int(request.query_params.get("limit"))
-        page_number = int(request.query_params.get("page_number"))
+        page_size = int(request.query_params.get("limit", 10))
+        page_number = int(request.query_params.get("page_number", 1))
         cache_key = f"products_per_page"
         products = Product.objects.all().prefetch_related("product_variant").order_by("name")
 

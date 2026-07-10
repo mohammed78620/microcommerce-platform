@@ -20,6 +20,8 @@ services:
             - DATABASE_NAME=${ORDERS_DATABASE_NAME}
             - DATABASE_USER=${ORDERS_DATABASE_USER}
             - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+            - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
+            - PRODUCTS_SERVICE_URL=${PRODUCTS_SERVICE_URL}
         networks:
             - microservices-network
 

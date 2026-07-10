@@ -1,11 +1,8 @@
-output "ec2_public_ip" {
-  description = "Public IP address of the EC2 host."
-  value       = aws_instance.app.public_ip
-}
-
-output "app_url" {
-  description = "HTTP URL for the deployed application host."
-  value       = "http://${aws_instance.app.public_ip}"
+output "microservice_public_ips" {
+  description = "Public (Elastic) IP per microservice EC2 instance."
+  value = {
+    for k, eip in aws_eip.microservice : k => eip.public_ip
+  }
 }
 
 output "rabbitmq_private_ip" {
@@ -29,11 +26,6 @@ output "cloudfront_domain" {
 output "cloudfront_id" {
   description = "CloudFront distribution id"
   value       = aws_cloudfront_distribution.frontend.id
-}
-
-output "app_public_ip" {
-  description = "Elastic IP of the app EC2 instance"
-  value       = aws_eip.app.public_ip
 }
 
 output "redis_endpoint" {

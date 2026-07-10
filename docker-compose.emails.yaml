@@ -19,6 +19,8 @@ services:
             - DATABASE_NAME=${EMAILS_DATABASE_NAME}
             - DATABASE_USER=${EMAILS_DATABASE_USER}
             - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+            - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
+            - PRODUCTS_SERVICE_URL=${PRODUCTS_SERVICE_URL}
         networks:
             - microservices-network
 
@@ -35,6 +37,8 @@ services:
             - DATABASE_NAME=${EMAILS_DATABASE_NAME}
             - DATABASE_USER=${EMAILS_DATABASE_USER}
             - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+            - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
+            - PRODUCTS_SERVICE_URL=${PRODUCTS_SERVICE_URL}
         restart: always
         networks:
             - microservices-network

@@ -32,7 +32,7 @@ resource "aws_db_parameter_group" "postgres15" {
 
   parameter {
     name  = "log_min_duration_statement"
-    value = "1000"   # log queries taking longer than 1 s
+    value = "1000" # log queries taking longer than 1 s
   }
 
   tags = { Name = "django-postgres15-params" }
@@ -100,13 +100,12 @@ resource "aws_db_instance" "service_db" {
   multi_az            = true
   publicly_accessible = false
 
-  backup_retention_period           = 0 # aws free tier
-  backup_window                     = "03:00-04:00"
-  maintenance_window                = "Mon:04:00-Mon:05:00"
+  backup_retention_period = 0 # aws free tier
+  backup_window           = "03:00-04:00"
+  maintenance_window      = "Mon:04:00-Mon:05:00"
 
-  deletion_protection               = false # should probably be true in production environment
-  skip_final_snapshot               = false
-  final_snapshot_identifier         = "${each.key}-postgres-final-snapshot"
+  deletion_protection = false # should probably be true in production environment
+  skip_final_snapshot = true  # snapshots disabled, no final snapshot on destroy
 
   tags = { Service = each.key }
 }

@@ -29,7 +29,7 @@ variable "public_key_path" {
 }
 
 variable "frontend_bucket_name" {
-  description = "Optional explicit name for the frontend S3 bucket. If empty Terraform will generate one." 
+  description = "Optional explicit name for the frontend S3 bucket. If empty Terraform will generate one."
   type        = string
   default     = ""
 }
@@ -56,4 +56,16 @@ variable "db_password" {
   description = "RDS password"
   type        = string
   sensitive   = true
+}
+
+variable "api_gateway_rate_limit" {
+  description = "Steady-state request rate limit (requests/second) enforced by API Gateway."
+  type        = number
+  default     = 50
+}
+
+variable "api_gateway_burst_limit" {
+  description = "Burst capacity (concurrent requests) enforced by API Gateway."
+  type        = number
+  default     = 20
 }
